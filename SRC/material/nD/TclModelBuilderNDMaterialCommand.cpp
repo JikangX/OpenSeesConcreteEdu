@@ -121,6 +121,7 @@ extern void* OPS_OrthotropicMaterial(void);
 extern void* OPS_Series3DMaterial(void);
 extern void* OPS_Parallel3DMaterial(void);
 extern void* OPS_ASDConcrete3DMaterial(void);
+extern void* OPS_JiangJianjingConcrete();
 #ifdef _EIGEN3
 extern void* OPS_AllASDPlasticMaterial3Ds(void);
 #endif // _EIGEN3
@@ -1267,6 +1268,12 @@ TclModelBuilderNDMaterialCommand (ClientData clientData, Tcl_Interp *interp, int
 			theMaterial = (NDMaterial *)theMat;
 		}
 		else 
+			return TCL_ERROR;
+	}
+
+	else if(strcmp(argv[1], "JiangJianjingConcrete") == 0) {
+		theMaterial = static_cast<NDMaterial*>(OPS_JiangJianjingConcrete());
+		if (theMaterial == 0)
 			return TCL_ERROR;
 	}
 

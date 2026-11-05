@@ -610,6 +610,12 @@
     <ClCompile Include="..\..\..\SRC\material\nD\ASDConcrete3DMaterial.cpp">
       <Filter>nD</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\SRC\material\nD\JiangJianjingConcrete\JiangJianjing.cpp">
+      <Filter>nD</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\SRC\material\nD\JiangJianjingConcrete\JiangJianjingConcrete.cpp">
+      <Filter>nD</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\SRC\material\nD\TclModelBuilderNDMaterialCommand.cpp">
       <Filter>nD</Filter>
     </ClCompile>
@@ -2042,6 +2048,12 @@
       <Filter>nD</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\SRC\material\nD\ASDConcrete3DMaterial.h">
+      <Filter>nD</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\material\nD\JiangJianjingConcrete\JiangJianjing.h">
+      <Filter>nD</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\material\nD\JiangJianjingConcrete\JiangJianjingConcrete.h">
       <Filter>nD</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\SRC\material\nD\WrapperNDMaterial.h">

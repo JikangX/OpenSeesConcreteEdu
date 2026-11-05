@@ -100,7 +100,9 @@ OBJS       = NDMaterial.o \
 	ElasticPlaneStress.o \
 	ElasticOrthotropicPlaneStress.o \
 	VonPapaDamage.o \
-	ASDConcrete3DMaterial.o
+	ASDConcrete3DMaterial.o \
+	JiangJianjingConcrete/JiangJianjing.o \
+	JiangJianjingConcrete/JiangJianjingConcrete.o
 
 
 all: $(OBJS) 

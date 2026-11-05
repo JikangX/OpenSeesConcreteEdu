@@ -30,6 +30,7 @@
 #include <PressureDependentElastic3D.h>
 #include <J2Plasticity.h>
 #include <MultiaxialCyclicPlasticity.h> // Gang Wang
+extern void* OPS_JiangJianjingConcrete();
 
 
 // start Yuli Huang & Xinzheng Lu
@@ -115,6 +116,11 @@ TclCommand_addNDMaterial(ClientData clientData, Tcl_Interp *interp,
       return TCL_ERROR;
   }
 
+  else if (strcmp(argv[1], "JiangJianjingConcrete") == 0) {
+    theMaterial = static_cast<NDMaterial*>(OPS_JiangJianjingConcrete());
+    if (theMaterial == nullptr)
+      return TCL_ERROR;
+  }
   else if (strcmp(argv[1], "PressureDependentElastic3D") == 0) {
     if (argc < 6) {
       opserr << "WARNING insufficient arguments\n";

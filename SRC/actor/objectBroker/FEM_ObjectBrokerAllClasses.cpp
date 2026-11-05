@@ -312,6 +312,7 @@
 #include "InitStrainNDMaterial.h"
 #include "MinMaxNDMaterial.h"
 #include "ASDConcrete3DMaterial.h"
+#include "JiangJianjingConcrete/JiangJianjingConcrete.h"
 #include "PlasticDamageConcrete3d.h"
 #include "PlasticDamageConcretePlaneStress.h"
 #include "ConcreteS.h"
@@ -2464,6 +2465,9 @@ FEM_ObjectBrokerAllClasses::getNewNDMaterial(int classTag)
 
   case ND_TAG_ASDConcrete3DMaterial:
       return new ASDConcrete3DMaterial();
+
+  case ND_TAG_JiangJianjingConcrete:
+      return new JiangJianjingConcrete();
 
   case ND_TAG_PlasticDamageConcrete3d:
       return new PlasticDamageConcrete3d();
