@@ -138,6 +138,13 @@ def main():
     key2 = 'J2=-s(1)*s(2)-s(2)*s(3)-s(3)*s(1)+s(4)**2+s(5)**2+s(6)**2'
     assert src.count(key2) == 1, 'unexpected source layout (J2)'
     src2 = src.replace(key2, key2 + '; if(J2<0.d0) J2=0.d0')
+    # And: for I1 >= fc/d (TempC >= 0, tension beyond the apex of the failure
+    # surface) the quadratic has only a non-positive root; Get_DS then gets
+    # beta <= 0 and Es >= E0 and the point never fails (original defect D2).
+    # The C++ treats it like the no-root branch (beta = 1).
+    key3 = 'if(TempB**2-4.*TempA*TempC>=0.) then'
+    assert src2.count(key3) == 1, 'unexpected source layout (discriminant)'
+    src2 = src2.replace(key3, 'if(TempB**2-4.*TempA*TempC>=0. .and. TempC<0.) then')
     (b / 'corr').mkdir()
     (b / 'corr' / 'JiangJJ2007_corr.for').write_bytes(src2.encode('latin1'))
     run([a.fc, '-std=legacy', '-ffixed-line-length-none', '-O0', '-c', 'JiangJJ2007_corr.for'], cwd=b / 'corr')

@@ -194,6 +194,48 @@ int main() {
         State cr;cr.strain = {{0, 0, -0.006, 0, 0, 0}};
         check(update(ic, cr, {{0, 0, -0.0061, 0, 0, 0}}, nullptr).crushed, "current beta: crushing unchanged");
     }
+    // Tension beyond the apex of the failure surface (I1 >= fc/d, mean stress
+    // >= fc/(3d) = 0.104 fc). Original defect D2: the quadratic for sqrt(J2f)
+    // has only a non-positive root, Get_DS gets beta <= 0 and Es >= E0, and
+    // (near-)hydrostatic tension never fails (45 MPa for fc 30 in 4 coarse
+    // steps). Here such states count as failed (beta = 1).
+    {
+        const double apex = q.fc / (3. * q.d); // hydrostatic tensile strength (mean stress)
+        const Vector6 beyond[] = {{{4, 4, 4, 0, 0, 0}}, {{4, 4, 4.5, 0, 0, 0}}, {{3, 3, 6, 0, 0, 0}}, {{6, 6, 6, 1, 0, 0}}};
+        for(const Vector6& s:beyond) {
+            const Index x = nonlinearIndex(q, s);
+            check(!x.solvable && x.beta == 1., "beyond the tensile apex: beta = 1");
+        }
+        check(nonlinearIndex(q, {{2, 2, 2, 0, 0, 0}}).beta == 0., "hydrostatic tension below the apex: beta = 0");
+        check(nonlinearIndex(q, {{2.9, 2.9, 0, 0, 0, 0}}).solvable, "biaxial tension below failure: solvable");
+        double worst = 0.;
+        for(const double dz:{1.0, 1.1}) // exactly hydrostatic, and near-hydrostatic
+        for(const int n:{60, 4}) // fine and coarse steps
+        for(const Parameters::BetaFrom bf:{Parameters::BetaFrom::Committed, Parameters::BetaFrom::Current}) {
+            Parameters t = q;t.betaFrom = bf;
+            State pt;
+            double held = 0.;
+            bool secantOk = true, heldOk = true;
+            for(int k = 1;k <= 3 * n;++k) {
+                const double x = 3e-4 * k / n;
+                pt = update(t, pt, {{x, x, dz * x, 0, 0, 0}}, nullptr);
+                secantOk = secantOk && pt.secantModulus <= t.E0 * (1. + 1e-12);
+                const double sm = (pt.stress[0] + pt.stress[1] + pt.stress[2]) / 3.;
+                if(k == 3 * n / 2) held = sm;
+                if(k > 3 * n / 2) heldOk = heldOk && sm == held;
+            }
+            check(secantOk, "tension beyond the apex: Es <= E0 (finite)");
+            check(heldOk, "tension beyond the apex: stress held");
+            const double sm = (pt.stress[0] + pt.stress[1] + pt.stress[2]) / 3.;
+            worst = std::max(worst, sm);
+            // committed beta: at most one increment beyond the surface (mean
+            // stress = 3 K x mean strain, K the bulk modulus); current beta:
+            // on the surface
+            const double bulk = t.E0 / (3. * (1. - 2. * t.nu));
+            check(sm < apex + 3. * bulk * 3.3e-4 / n + 1e-9, "tension beyond the apex: mean stress bounded");
+        }
+        std::printf("INFO tension beyond the apex: largest held mean stress %.3f MPa (apex %.3f MPa, fc 30)\n", worst, apex);
+    }
     std::string err;
     Parameters bad = q;bad.fc = -30.;check(!bad.validate(err), "reject negative fc");
     bad = q;bad.epsCrush = 0.0033;check(!bad.validate(err), "reject positive epsCrush");

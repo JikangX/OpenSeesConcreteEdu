@@ -72,7 +72,9 @@ struct State {
 /** Nonlinear index of a stress state: beta = sqrt(J2)/sqrt(J2f), where J2f is
  * the J2 of the failure surface at the same I1 and Lode angle theta
  * (Jiang's sqrt(J2) method, slide 25). solvable=false when the quadratic for
- * sqrt(J2f) has no real root (Get_DS writes "Wrong" and uses beta = 1).
+ * sqrt(J2f) has no positive root, beta = 1 then: no real root (Get_DS writes
+ * "Wrong" and uses beta = 1), or tension beyond the apex of the failure
+ * surface, I1 >= fc/d (Get_DS returns beta <= 0 there, original defect D2).
  */
 struct Index {
     double I1 = 0., J2 = 0., J3 = 0., theta = 0., sqrtJ2f = 0., beta = 0.;

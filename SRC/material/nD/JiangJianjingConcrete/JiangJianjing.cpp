@@ -48,8 +48,18 @@ Index nonlinearIndex(const Parameters& p,const Vector6& sig) {
     const double B=(p.b+p.c*std::cos(out.theta))/p.fc;
     const double C=p.d*out.I1/p.fc-1.;
     const double disc=B*B-4.*A*C;
-    if(disc>=0.) {
-        out.sqrtJ2f=(-B+std::sqrt(disc))/(2.*A);
+    // The failure surface closes on the hydrostatic axis at I1 = fc/d (mean
+    // stress fc/(3d) = 0.104 fc for the default constants). For I1 >= fc/d
+    // (C >= 0) the quadratic has no positive root, i.e. the stress lies
+    // beyond the tensile apex. Get_DS only tests disc >= 0 and then gets
+    // sqrt(J2f) <= 0, beta <= 0 and Es >= E0: the point never fails and
+    // stiffens (original defect D2). Treat it like the no-root case.
+    // For C < 0, disc > B*B >= 0 always; the root keeps the Get_DS formula
+    // (bitwise comparison with the Fortran), which rounds to 0 within ~1 ulp
+    // of the apex (beta = 0/0 on the hydrostatic axis): counted as the apex.
+    const double root=(C<0. && disc>=0.) ? (-B+std::sqrt(disc))/(2.*A) : 0.;
+    if(root>0.) {
+        out.sqrtJ2f=root;
         out.beta=std::sqrt(out.J2)/out.sqrtJ2f;
     } else {
         out.solvable=false;
@@ -98,10 +108,13 @@ State updateCurrent(const Parameters& p,const State& committed,const Vector6& st
     bool surface=false;
     if(bOf(.5)>=1.) {
         // the failure surface is reached on this ray below the secant E0/2:
-        // stress on the surface, beta(s sigma_e) = 1
+        // stress on the surface, beta(s sigma_e) = 1. Take the bracket end on
+        // the failed side (beta >= 1), so that the hold rule of the next
+        // increment applies even where beta jumps across the surface (on the
+        // hydrostatic axis beta is 0 up to the tensile apex and 1 beyond it).
         double lo=0.,hi=.5;
         for(int k=0;k<200 && hi-lo>1.e-15;++k) {const double m=.5*(lo+hi);(bOf(m)<1. ? lo : hi)=m;}
-        s=lo;beta=1.;surface=true;
+        s=hi;beta=1.;surface=true;
     } else {
         double lo=.5,hi=1.,flo=hOf(lo),fhi=hOf(hi);
         if(fhi<=0.) s=1.;
