@@ -37,10 +37,8 @@ Earthquake Engineering & Structural Dynamics, 2013, 42(5): 705-723*/
 #include <FEM_ObjectBroker.h>
 #include <MaterialResponse.h>
 #include <elementAPI.h>
-
-//static vector and matrices
-Vector  PlateFromPlaneStressMaterial::stress(5) ;
-Matrix  PlateFromPlaneStressMaterial::tangent(5,5) ;
+#include <cmath>
+#include <cstring>
 
 void* OPS_PlateFromPlaneStressMaterial()
 {
@@ -86,17 +84,42 @@ void* OPS_PlateFromPlaneStressMaterial()
 //null constructor
 PlateFromPlaneStressMaterial::PlateFromPlaneStressMaterial( ) : 
 NDMaterial(0, ND_TAG_PlateFromPlaneStressMaterial ), 
-theMat(nullptr), strain(5), gmod(0.0)
+theMat(nullptr), gmod(0.0), strain(5), planeStressStrain(3),
+planeStressRate(3), stress(5), tangent(5,5)
 { }
 
 
 //full constructor
-PlateFromPlaneStressMaterial::PlateFromPlaneStressMaterial(    
+PlateFromPlaneStressMaterial::PlateFromPlaneStressMaterial(
 				   int tag, NDMaterial &ndMat, double g ) :
 NDMaterial( tag, ND_TAG_PlateFromPlaneStressMaterial ),
-strain(5),gmod(g)
+theMat(nullptr), gmod(g), strain(5), planeStressStrain(3),
+planeStressRate(3), stress(5), tangent(5,5)
 {
-  theMat = ndMat.getCopy("PlaneStress") ;
+  // a material that is already plane stress is copied as is
+  const char *materialType = ndMat.getType();
+  if (strcmp(materialType, "PlaneStress") == 0 ||
+      strcmp(materialType, "PlaneStress2D") == 0)
+    theMat = ndMat.getCopy() ;
+  else
+    theMat = ndMat.getCopy("PlaneStress") ;
+}
+
+
+// re-synchronise theMat with the in-plane part of strain when they differ
+// (after revert, copy or restart of a wrapper whose trial was not committed)
+static int
+syncPlaneStressStrain(NDMaterial *theMat, const Vector &strain, Vector &planeStressStrain)
+{
+  const Vector &current = theMat->getStrain();
+  bool consistent = current.Size() == 3;
+  for (int i = 0; i < 3 && consistent; i++)
+    consistent = current(i) == strain(i);
+  if (consistent)
+    return 0;
+  for (int i = 0; i < 3; i++)
+    planeStressStrain(i) = strain(i);
+  return theMat->setTrialStrain(planeStressStrain);
 }
 
 
@@ -112,9 +135,19 @@ PlateFromPlaneStressMaterial::~PlateFromPlaneStressMaterial( )
 NDMaterial*
 PlateFromPlaneStressMaterial::getCopy( ) 
 {
-  PlateFromPlaneStressMaterial *clone ;   //new instance of this class
-
-  clone = new PlateFromPlaneStressMaterial( this->getTag(), *theMat, gmod ) ;
+  // copy the wrapped material together with its state
+  PlateFromPlaneStressMaterial *clone = new PlateFromPlaneStressMaterial();
+  clone->setTag(this->getTag());
+  clone->theMat = theMat->getCopy();
+  if (clone->theMat == nullptr) {
+    delete clone;
+    return nullptr;
+  }
+  clone->gmod = gmod;
+  clone->strain = strain;
+  for (int i = 0; i < 5; i++)
+    clone->committedStrain[i] = committedStrain[i];
+  syncPlaneStressStrain(clone->theMat, clone->strain, clone->planeStressStrain);
 
   return clone ;
 }
@@ -151,16 +184,25 @@ PlateFromPlaneStressMaterial::getType( ) const
 int 
 PlateFromPlaneStressMaterial::commitState( ) 
 {
-  return theMat->commitState( ) ;
+  const int result = theMat->commitState( ) ;
+  if (result == 0)
+    for (int i = 0; i < 5; i++)
+      committedStrain[i] = strain(i);
+  return result ;
 }
 
 
 
 //revert to last saved state
-int 
+int
 PlateFromPlaneStressMaterial::revertToLastCommit( )
 {
-  return theMat->revertToLastCommit( )  ;
+  for (int i = 0; i < 5; i++)
+    strain(i) = committedStrain[i];
+  int result = theMat->revertToLastCommit( ) ;
+  if (result == 0)
+    result = syncPlaneStressStrain(theMat, strain, planeStressStrain);
+  return result ;
 }
 
 
@@ -168,6 +210,8 @@ PlateFromPlaneStressMaterial::revertToLastCommit( )
 int
 PlateFromPlaneStressMaterial::revertToStart( )
 {
+  for (int i = 0; i < 5; i++)
+    committedStrain[i] = 0.0;
 
   strain.Zero();
 
@@ -187,19 +231,63 @@ PlateFromPlaneStressMaterial::getRho( )
 int 
 PlateFromPlaneStressMaterial::setTrialStrain( const Vector &strainFromElement )
 {
-  strain(0) = strainFromElement(0) ;
-  strain(1) = strainFromElement(1) ;
-  strain(2) = strainFromElement(2) ;
-  strain(3) = strainFromElement(3) ;
-  strain(4) = strainFromElement(4) ;
+  if (strainFromElement.Size() != 5)
+    return -1;
+  for (int i = 0; i < 5; i++)
+    if (!std::isfinite(strainFromElement(i)))
+      return -1;
 
-  static Vector PSStrain(3) ;
-  
-  PSStrain(0) = strain(0);
-  PSStrain(1) = strain(1);
-  PSStrain(2) = strain(2);
+  for (int i = 0; i < 3; i++)
+    planeStressStrain(i) = strainFromElement(i);
 
-  return theMat->setTrialStrain(PSStrain);
+  // the wrapper strain changes only if the wrapped material accepts the trial
+  const int result = theMat->setTrialStrain(planeStressStrain);
+  if (result == 0)
+    strain = strainFromElement;
+  return result;
+}
+
+
+int
+PlateFromPlaneStressMaterial::setTrialStrain( const Vector &strainFromElement,
+                                              const Vector &rate )
+{
+  if (strainFromElement.Size() != 5 || rate.Size() != 5)
+    return -1;
+  for (int i = 0; i < 5; i++)
+    if (!std::isfinite(strainFromElement(i)) || !std::isfinite(rate(i)))
+      return -1;
+
+  for (int i = 0; i < 3; i++) {
+    planeStressStrain(i) = strainFromElement(i);
+    planeStressRate(i) = rate(i);
+  }
+
+  const int result = theMat->setTrialStrain(planeStressStrain, planeStressRate);
+  if (result == 0)
+    strain = strainFromElement;
+  return result;
+}
+
+
+int
+PlateFromPlaneStressMaterial::setTrialStrainIncr( const Vector &strainIncrement )
+{
+  if (strainIncrement.Size() != 5)
+    return -1;
+  const Vector next = strain + strainIncrement;
+  return this->setTrialStrain(next);
+}
+
+
+int
+PlateFromPlaneStressMaterial::setTrialStrainIncr( const Vector &strainIncrement,
+                                                  const Vector &rate )
+{
+  if (strainIncrement.Size() != 5)
+    return -1;
+  const Vector next = strain + strainIncrement;
+  return this->setTrialStrain(next, rate);
 }
 
 
@@ -233,7 +321,7 @@ PlateFromPlaneStressMaterial::getStress( )
 const Matrix&  
 PlateFromPlaneStressMaterial::getTangent( )
 {
-  const Matrix PSTangent = theMat->getTangent( ) ;
+  const Matrix &PSTangent = theMat->getTangent( ) ;
 
   tangent.Zero();
   
@@ -258,7 +346,7 @@ const Matrix&
 PlateFromPlaneStressMaterial::getInitialTangent
 ( )
 {
-  const Matrix PSTangent = theMat->getInitialTangent( ) ;
+  const Matrix &PSTangent = theMat->getInitialTangent( ) ;
 
   tangent.Zero();
   
@@ -308,15 +396,18 @@ PlateFromPlaneStressMaterial::sendSelf(int commitTag, Channel &theChannel)
 
   int matDbTag;
   
-  static ID idData(3);
-  idData(0) = dataTag;
-  idData(1) = theMat->getClassTag();
+  // idData(1) < 0 marks a packet that carries the wrapper strain history;
+  // idData(3) is reserved (0) to keep the layout of OpenSeesCUDA checkpoints
+  static ID idData(4);
+  idData(0) = this->getTag();
+  idData(1) = -theMat->getClassTag();
   matDbTag = theMat->getDbTag();
   if (matDbTag == 0) {
     matDbTag = theChannel.getDbTag();
     theMat->setDbTag(matDbTag);
   }
   idData(2) = matDbTag;
+  idData(3) = 0;
 
   res = theChannel.sendID(dataTag, commitTag, idData);
   if (res < 0) {
@@ -324,8 +415,13 @@ PlateFromPlaneStressMaterial::sendSelf(int commitTag, Channel &theChannel)
     return res;
   }
 
-  static Vector vecData(1);
+  // gmod, trial strain(5), committed strain(5)
+  Vector vecData(11);
   vecData(0) = gmod;
+  for (int i = 0; i < 5; i++) {
+    vecData(i + 1) = strain(i);
+    vecData(i + 6) = committedStrain[i];
+  }
 
   res = theChannel.sendVector(dataTag, commitTag, vecData);
   if (res < 0) {
@@ -349,7 +445,7 @@ PlateFromPlaneStressMaterial::recvSelf(int commitTag, Channel &theChannel, FEM_O
   int dataTag = this->getDbTag();
 
   // recv an id containing the tag and associated materials class and db tags
-  static ID idData(3);
+  static ID idData(4);
   res = theChannel.recvID(dataTag, commitTag, idData);
   if (res < 0) {
     opserr << "PlateFromPlaneStressMaterial::sendSelf() - failed to receive id data" << endln;
@@ -357,7 +453,10 @@ PlateFromPlaneStressMaterial::recvSelf(int commitTag, Channel &theChannel, FEM_O
   }
 
   this->setTag(idData(0));
-  int matClassTag = idData(1);
+  // negative class tag: packet with committed strain (11 values);
+  // positive: earlier packet with trial strain only (6 values)
+  const bool hasHistory = idData(1) < 0;
+  int matClassTag = hasHistory ? -idData(1) : idData(1);
   if (theMat == nullptr || theMat->getClassTag() != matClassTag) {
     if (theMat != 0) delete theMat;
     theMat = theBroker.getNewNDMaterial(matClassTag);
@@ -368,19 +467,25 @@ PlateFromPlaneStressMaterial::recvSelf(int commitTag, Channel &theChannel, FEM_O
   }
   theMat->setDbTag(idData(2));
 
-  static Vector vecData(1);
+  Vector vecData(hasHistory ? 11 : 6);
   res = theChannel.recvVector(dataTag, commitTag, vecData);
   if (res < 0) {
     opserr << "PlateFromPlaneStressMaterial::sendSelf() - failed to receive vector data" << endln;
     return res;
   }
   gmod = vecData(0);
+  for (int i = 0; i < 5; i++) {
+    strain(i) = vecData(i + 1);
+    committedStrain[i] = hasHistory ? vecData(i + 6) : strain(i);
+  }
 
   // now receive the materials data
   res = theMat->recvSelf(commitTag, theChannel, theBroker);
-  if (res < 0) 
+  if (res < 0)
     opserr << "PlateFromPlaneStressMaterial::sendSelf() - failed to receive material1" << endln;
-  
+  else
+    res = syncPlaneStressStrain(theMat, strain, planeStressStrain);
+
   return res;
 }
 

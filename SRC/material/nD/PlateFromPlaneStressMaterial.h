@@ -69,8 +69,11 @@ class PlateFromPlaneStressMaterial: public NDMaterial{
     //revert to start
     int revertToStart( ) ;
 
-    //get the strain 
+    //get the strain
     int setTrialStrain( const Vector &strainFromElement ) ;
+    int setTrialStrain( const Vector &strainFromElement, const Vector &rate ) ;
+    int setTrialStrainIncr( const Vector &strainIncrement ) ;
+    int setTrialStrainIncr( const Vector &strainIncrement, const Vector &rate ) ;
 
     //send back the strain
     const Vector& getStrain( ) ;
@@ -103,8 +106,12 @@ private :
     double gmod;
 
     Vector strain ;
-    static Vector stress ;
-    static Matrix tangent ;
+    double committedStrain[5] = {};  // restored by revertToLastCommit
+    Vector planeStressStrain ;       // in-plane part passed to theMat
+    Vector planeStressRate ;
+    // per-instance buffers: copies must not share returned stress/tangent
+    Vector stress ;
+    Matrix tangent ;
 
 } ;
 

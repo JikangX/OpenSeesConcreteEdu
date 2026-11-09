@@ -72,6 +72,9 @@ class PlateRebarMaterial: public NDMaterial{
 
     //get the strain 
     int setTrialStrain( const Vector &strainFromElement ) ;
+    int setTrialStrain( const Vector &strainFromElement, const Vector &rate ) ;
+    int setTrialStrainIncr( const Vector &strainIncrement ) ;
+    int setTrialStrainIncr( const Vector &strainIncrement, const Vector &rate ) ;
 
     //send back the strain
     const Vector& getStrain( ) ;
@@ -96,12 +99,17 @@ class PlateRebarMaterial: public NDMaterial{
     int setParameter(const char** argv, int argc, Parameter& param);
 
 private :
+    // strain along the bar direction for a plate-fiber strain vector
+    double axialStrain( const Vector &plateStrain ) const ;
+
     UniaxialMaterial *theMat ;
     double angle, c, s;
 
     Vector strain ;
-    static Vector stress ;
-    static Matrix tangent ;
+    double committedStrain[5] = {};  // restored by revertToLastCommit
+    // per-instance buffers: copies must not share returned stress/tangent
+    Vector stress ;
+    Matrix tangent ;
 
 } ;
 

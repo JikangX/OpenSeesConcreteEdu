@@ -38,6 +38,7 @@ Earthquake Engineering & Structural Dynamics, 2013, 42(5): 705-723*/
 #include <Information.h>
 #include <elementAPI.h>
 #include <Parameter.h>
+#include <cmath>
 
 void* OPS_LayeredShellFiberSection()
 {
@@ -150,7 +151,7 @@ LayeredShellFiberSection::LayeredShellFiberSection( ) :
 SectionForceDeformation( 0, SEC_TAG_LayeredShellFiberSection ), 
 nLayers(0), sg(nullptr), wg(nullptr), h(0.0), theFibers(nullptr), strainResultant(8)
 {
-
+  strainResultant.Zero();
 }
 
 //full constructor
@@ -162,6 +163,7 @@ LayeredShellFiberSection::LayeredShellFiberSection(
 SectionForceDeformation( tag, SEC_TAG_LayeredShellFiberSection ),
 strainResultant(8)
 {
+  strainResultant.Zero();
   this->nLayers = iLayers;
   sg = new double[iLayers];
   wg = new double[iLayers];
@@ -224,8 +226,13 @@ SectionForceDeformation  *LayeredShellFiberSection::getCopy( )
 					 thickness,
 					 theFibers ) ; //make the copy
     delete [] thickness;
+
+    // the copied fibers carry their state; keep the section kinematics in step
+    clone->strainResultant = strainResultant;
+    for (int i = 0; i < 8; i++)
+      clone->committedStrainResultant[i] = committedStrainResultant[i];
   }
-  
+
   return clone ;
 }
 
@@ -266,12 +273,19 @@ int LayeredShellFiberSection::commitState( )
   for (int i = 0; i < nLayers; i++ )
     success += theFibers[i]->commitState( ) ;
 
+  if (success == 0)
+    for (int i = 0; i < 8; i++)
+      committedStrainResultant[i] = strainResultant(i);
+
   return success ;
 }
 
 //revert to last saved state
 int LayeredShellFiberSection::revertToLastCommit( )
 {
+  for (int i = 0; i < 8; i++)
+    strainResultant(i) = committedStrainResultant[i];
+
   int success = 0 ;
 
   for (int i = 0; i < nLayers; i++ )
@@ -283,6 +297,10 @@ int LayeredShellFiberSection::revertToLastCommit( )
 //revert to start
 int LayeredShellFiberSection::revertToStart( )
 {
+  strainResultant.Zero();
+  for (int i = 0; i < 8; i++)
+    committedStrainResultant[i] = 0.0;
+
   int success = 0 ;
 
   for (int i = 0; i < nLayers; i++ )
@@ -420,6 +438,13 @@ int LayeredShellFiberSection::updateParameter(int parameterID, Information& info
 int LayeredShellFiberSection ::
 setTrialSectionDeformation( const Vector &strainResultant_from_element)
 {
+  // reject malformed or non-finite trials before any layer is touched
+  if (strainResultant_from_element.Size() != 8)
+    return -1;
+  for (int k = 0; k < 8; k++)
+    if (!std::isfinite(strainResultant_from_element(k)))
+      return -1;
+
   this->strainResultant = strainResultant_from_element ;
 
   static Vector strain(5) ;
@@ -444,9 +469,18 @@ setTrialSectionDeformation( const Vector &strainResultant_from_element)
 
       strain(3) =  strainResultant(7) ;
   
-      success += theFibers[i]->setTrialStrain( strain ) ;
+      const int result = theFibers[i]->setTrialStrain( strain ) ;
+      if (result != 0) {
+        success = result ;
+        break ;
+      }
 
   } //end for i
+
+  // a layer rejected the trial: restore the committed state of the whole
+  // section, including layers that already accepted it
+  if (success != 0)
+    this->revertToLastCommit( ) ;
 
   return success ;
 }
@@ -507,6 +541,19 @@ const Vector&  LayeredShellFiberSection::getStressResultant( )
 //send back the tangent 
 const Matrix&  LayeredShellFiberSection::getSectionTangent( )
 {
+  return this->assembleSectionTangent(false) ;
+}
+
+
+//send back the initial tangent, assembled from the layers' initial tangents
+const Matrix&  LayeredShellFiberSection::getInitialTangent( )
+{
+  return this->assembleSectionTangent(true) ;
+}
+
+
+const Matrix&  LayeredShellFiberSection::assembleSectionTangent(bool initial)
+{
   static Matrix dd(5,5) ;
 
 //  static Matrix Aeps(5,8) ;
@@ -560,7 +607,7 @@ const Matrix&  LayeredShellFiberSection::getSectionTangent( )
 
       //compute the tangent
 
-      dd = theFibers[i]->getTangent( ) ;
+      dd = initial ? theFibers[i]->getInitialTangent( ) : theFibers[i]->getTangent( ) ;
 
       dd *= weight ;
 
@@ -712,6 +759,7 @@ LayeredShellFiberSection::sendSelf(int commitTag, Channel &theChannel)
   static ID iData(3);
   iData(0) = this->getTag();
   iData(1) = nLayers;
+  iData(2) = 1; // vector data carries the trial and committed section deformation
 
   res += theChannel.sendID(dataTag, commitTag, iData);
   if (res < 0) {
@@ -721,7 +769,7 @@ LayeredShellFiberSection::sendSelf(int commitTag, Channel &theChannel)
   
   if (nLayers > 0)
   {
-    Vector vecData(2*nLayers+1 + 2*nLayers);
+    Vector vecData(2*nLayers+1 + 2*nLayers + 16);
     int counter = 0;
     int i;
     for (i = 0; i < nLayers; i++) {
@@ -743,7 +791,12 @@ LayeredShellFiberSection::sendSelf(int commitTag, Channel &theChannel)
       }
       vecData(counter++) = (double)matDbTag;
     }
-    
+
+    for (i = 0; i < 8; i++)
+      vecData(counter++) = strainResultant(i);
+    for (i = 0; i < 8; i++)
+      vecData(counter++) = committedStrainResultant[i];
+
     res += theChannel.sendVector(dataTag, commitTag, vecData);
     if (res < 0) {
       opserr << "WARNING LayeredShellFiberSection::sendSelf() - " << this->getTag() << " failed to send Vector data" << endln;
@@ -784,11 +837,7 @@ LayeredShellFiberSection::recvSelf(int commitTag, Channel &theChannel, FEM_Objec
   int i;
   if (nLayers != iData(1))
   {
-    nLayers = iData(1);
-    if (sg != 0) delete [] sg;
-    sg = new double[nLayers];
-    if (wg != 0) delete [] wg;
-    wg = new double[nLayers];
+    // free the existing fibers with the OLD layer count before resizing
     if (theFibers !=0)
     {
       for ( i = 0; i < nLayers; i++ )
@@ -797,6 +846,11 @@ LayeredShellFiberSection::recvSelf(int commitTag, Channel &theChannel, FEM_Objec
       }
       delete [] theFibers;
     }
+    nLayers = iData(1);
+    if (sg != 0) delete [] sg;
+    sg = new double[nLayers];
+    if (wg != 0) delete [] wg;
+    wg = new double[nLayers];
     theFibers = new NDMaterial*[nLayers];
     for (i = 0; i < nLayers; ++i)
         theFibers[i] = nullptr;
@@ -804,7 +858,9 @@ LayeredShellFiberSection::recvSelf(int commitTag, Channel &theChannel, FEM_Objec
 
   if (nLayers > 0)
   {
-    Vector vecData(2*nLayers+1 + 2 * nLayers);
+    // iData(2)==1: extended data with section deformation; 0: older format
+    const bool hasKinematics = (iData(2) == 1);
+    Vector vecData(2*nLayers+1 + 2 * nLayers + (hasKinematics ? 16 : 0));
     res += theChannel.recvVector(dataTag, commitTag, vecData);
     if (res < 0) {
     opserr << "WARNING LayeredShellFiberSection::recvSelf() - " << this->getTag() << " failed to receive Vector data" << endln;
@@ -838,6 +894,16 @@ LayeredShellFiberSection::recvSelf(int commitTag, Channel &theChannel, FEM_Objec
           i << ", failed to recv itself" << endln;
         return res;
       }
+    }
+
+    strainResultant.Zero();
+    for (i = 0; i < 8; i++)
+      committedStrainResultant[i] = 0.0;
+    if (hasKinematics) {
+      for (i = 0; i < 8; i++)
+        strainResultant(i) = vecData(counter++);
+      for (i = 0; i < 8; i++)
+        committedStrainResultant[i] = vecData(counter++);
     }
   }
     

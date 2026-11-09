@@ -37,15 +37,14 @@ Earthquake Engineering & Structural Dynamics, 2013, 42(5): 705-723*/
 #include <MaterialResponse.h>   //Antonios Vytiniotis used for the recorder
 #include <math.h>
 #include <elementAPI.h>
-
-//static vector and matrices
-Vector  PlateRebarMaterial::stress(5) ;
-Matrix  PlateRebarMaterial::tangent(5,5) ;
+#include <cmath>
+#include <cstring>
 
 //null constructor
-PlateRebarMaterial::PlateRebarMaterial( ) : 
-NDMaterial(0, ND_TAG_PlateRebarMaterial ), 
-theMat(nullptr), angle(0.0), c(0.0), s(0.0), strain(5) 
+PlateRebarMaterial::PlateRebarMaterial( ) :
+NDMaterial(0, ND_TAG_PlateRebarMaterial ),
+theMat(nullptr), angle(0.0), c(0.0), s(0.0), strain(5),
+stress(5), tangent(5,5)
 { }
 
 void* OPS_PlateRebarMaterial()
@@ -95,12 +94,24 @@ PlateRebarMaterial::PlateRebarMaterial(int tag,
                                        UniaxialMaterial &uniMat,
                                        double ang) :
 NDMaterial( tag, ND_TAG_PlateRebarMaterial ),
-strain(5),angle(ang)
+theMat(nullptr), angle(ang), c(0.0), s(0.0), strain(5),
+stress(5), tangent(5,5)
 {
   theMat = uniMat.getCopy() ;
   double rang = ang * 4.0 * asin(1.0)/360.0;
   c = cos(rang);
   s = sin(rang);
+}
+
+
+double
+PlateRebarMaterial::axialStrain( const Vector &plateStrain ) const
+{
+  if (angle == 0)
+    return plateStrain(0);
+  else if (angle == 90)
+    return plateStrain(1);
+  return plateStrain(0) * c * c + plateStrain(1) * s * s + plateStrain(2) * c * s;
 }
 
 
@@ -115,11 +126,16 @@ PlateRebarMaterial::~PlateRebarMaterial( )
 NDMaterial*
 PlateRebarMaterial::getCopy( ) 
 {
-  PlateRebarMaterial *clone ;   //new instance of this class
-
-  clone = new PlateRebarMaterial( this->getTag(), 
-                                  *theMat,
-                                  angle ) ; //make the copy
+  // copy the uniaxial material together with its state
+  PlateRebarMaterial *clone = new PlateRebarMaterial( this->getTag(),
+                                                      *theMat,
+                                                      angle ) ;
+  clone->strain = strain;
+  for (int i = 0; i < 5; i++)
+    clone->committedStrain[i] = committedStrain[i];
+  const double axial = this->axialStrain(strain);
+  if (clone->theMat->getStrain() != axial)
+    clone->theMat->setTrialStrain(axial);
 
   return clone ;
 }
@@ -156,16 +172,26 @@ PlateRebarMaterial::getType( ) const
 int 
 PlateRebarMaterial::commitState( ) 
 {
-  return theMat->commitState( ) ;
+  const int result = theMat->commitState( ) ;
+  if (result == 0)
+    for (int i = 0; i < 5; i++)
+      committedStrain[i] = strain(i);
+  return result ;
 }
 
 
 
 //revert to last saved state
-int 
+int
 PlateRebarMaterial::revertToLastCommit( )
 {
-  return theMat->revertToLastCommit( ) ;
+  for (int i = 0; i < 5; i++)
+    strain(i) = committedStrain[i];
+  int result = theMat->revertToLastCommit( ) ;
+  const double axial = this->axialStrain(strain);
+  if (result == 0 && theMat->getStrain() != axial)
+    result = theMat->setTrialStrain(axial);
+  return result ;
 }
 
 
@@ -173,6 +199,8 @@ PlateRebarMaterial::revertToLastCommit( )
 int
 PlateRebarMaterial::revertToStart( )
 {
+  for (int i = 0; i < 5; i++)
+    committedStrain[i] = 0.0;
   strain.Zero();
   return theMat->revertToStart( ) ;
 }
@@ -190,21 +218,56 @@ PlateRebarMaterial::getRho( )
 int 
 PlateRebarMaterial::setTrialStrain( const Vector &strainFromElement )
 {
-  strain(0) = strainFromElement(0) ;
-  strain(1) = strainFromElement(1) ;
-  strain(2) = strainFromElement(2) ;
-  strain(3) = strainFromElement(3) ;
-  strain(4) = strainFromElement(4) ;
+  if (strainFromElement.Size() != 5)
+    return -1;
+  for (int i = 0; i < 5; i++)
+    if (!std::isfinite(strainFromElement(i)))
+      return -1;
 
-  if (angle == 0)
-    return theMat->setTrialStrain(strain(0));
-  else if (angle == 90)
-    return theMat->setTrialStrain(strain(1));
-  
-  return theMat->setTrialStrain(   strain(0) * c * c
-				   + strain(1) * s * s
-				   + strain(2) * c * s,
-				   0) ;
+  // the wrapper strain changes only if the uniaxial material accepts the trial
+  const int result = theMat->setTrialStrain(this->axialStrain(strainFromElement));
+  if (result == 0)
+    strain = strainFromElement;
+  return result;
+}
+
+
+int
+PlateRebarMaterial::setTrialStrain( const Vector &strainFromElement,
+                                    const Vector &rate )
+{
+  if (strainFromElement.Size() != 5 || rate.Size() != 5)
+    return -1;
+  for (int i = 0; i < 5; i++)
+    if (!std::isfinite(strainFromElement(i)) || !std::isfinite(rate(i)))
+      return -1;
+
+  const int result = theMat->setTrialStrain(this->axialStrain(strainFromElement),
+                                            this->axialStrain(rate));
+  if (result == 0)
+    strain = strainFromElement;
+  return result;
+}
+
+
+int
+PlateRebarMaterial::setTrialStrainIncr( const Vector &strainIncrement )
+{
+  if (strainIncrement.Size() != 5)
+    return -1;
+  const Vector next = strain + strainIncrement;
+  return this->setTrialStrain(next);
+}
+
+
+int
+PlateRebarMaterial::setTrialStrainIncr( const Vector &strainIncrement,
+                                        const Vector &rate )
+{
+  if (strainIncrement.Size() != 5)
+    return -1;
+  const Vector next = strain + strainIncrement;
+  return this->setTrialStrain(next, rate);
 }
 
 
@@ -319,15 +382,18 @@ PlateRebarMaterial::sendSelf(int commitTag, Channel &theChannel)
 
   int matDbTag;
   
-  static ID idData(3);
-  idData(0) = dataTag;
-  idData(1) = theMat->getClassTag();
+  // idData(1) < 0 marks a packet that carries the wrapper strain history;
+  // idData(3) is reserved (0) to keep the layout of OpenSeesCUDA checkpoints
+  static ID idData(4);
+  idData(0) = this->getTag();
+  idData(1) = -theMat->getClassTag();
   matDbTag = theMat->getDbTag();
   if (matDbTag == 0) {
     matDbTag = theChannel.getDbTag();
     theMat->setDbTag(matDbTag);
   }
   idData(2) = matDbTag;
+  idData(3) = 0;
 
   res = theChannel.sendID(dataTag, commitTag, idData);
   if (res < 0) {
@@ -335,8 +401,13 @@ PlateRebarMaterial::sendSelf(int commitTag, Channel &theChannel)
     return res;
   }
 
-  static Vector vecData(1);
+  // angle, trial strain(5), committed strain(5)
+  Vector vecData(11);
   vecData(0) = angle;
+  for (int i = 0; i < 5; i++) {
+    vecData(i + 1) = strain(i);
+    vecData(i + 6) = committedStrain[i];
+  }
 
   res = theChannel.sendVector(dataTag, commitTag, vecData);
   if (res < 0) {
@@ -360,7 +431,7 @@ PlateRebarMaterial::recvSelf(int commitTag, Channel &theChannel, FEM_ObjectBroke
   int dataTag = this->getDbTag();
 
   // recv an id containing the tag and associated materials class and db tags
-  static ID idData(3);
+  static ID idData(4);
   res = theChannel.recvID(dataTag, commitTag, idData);
   if (res < 0) {
     opserr << "PlateRebarMaterial::sendSelf() - failed to receive ID" << endln;
@@ -368,7 +439,10 @@ PlateRebarMaterial::recvSelf(int commitTag, Channel &theChannel, FEM_ObjectBroke
   }
 
   this->setTag(idData(0));
-  int matClassTag = idData(1);
+  // negative class tag: packet with committed strain (11 values);
+  // positive: earlier packet with trial strain only (6 values)
+  const bool hasHistory = idData(1) < 0;
+  int matClassTag = hasHistory ? -idData(1) : idData(1);
   if (theMat == nullptr || theMat->getClassTag() != matClassTag) {
     if (theMat != 0) delete theMat;
     theMat = theBroker.getNewUniaxialMaterial(matClassTag);
@@ -379,22 +453,33 @@ PlateRebarMaterial::recvSelf(int commitTag, Channel &theChannel, FEM_ObjectBroke
   }
   theMat->setDbTag(idData(2));
 
-  static Vector vecData(1);
+  Vector vecData(hasHistory ? 11 : 6);
   res = theChannel.recvVector(dataTag, commitTag, vecData);
   if (res < 0) {
     opserr << "PlateRebarMaterial::sendSelf() - failed to receive Vector" << endln;
     return res;
   }
   angle = vecData(0);
-  double rang = angle * 0.0174532925;
+  for (int i = 0; i < 5; i++) {
+    strain(i) = vecData(i + 1);
+    committedStrain[i] = hasHistory ? vecData(i + 6) : strain(i);
+  }
+  // same conversion as the constructor (the former truncated factor
+  // 0.0174532925 changed non-axis rebar results after a restart)
+  double rang = angle * 4.0 * asin(1.0)/360.0;
   c = cos(rang);
   s = sin(rang);
 
   // now receive the materials data
   res = theMat->recvSelf(commitTag, theChannel, theBroker);
-  if (res < 0) 
+  if (res < 0)
     opserr << "PlateRebarMaterial::sendSelf() - failed to receive material1" << endln;
-  
+  else {
+    const double axial = this->axialStrain(strain);
+    if (theMat->getStrain() != axial)
+      res = theMat->setTrialStrain(axial);
+  }
+
   return res;
 }
 

@@ -103,7 +103,7 @@ class LayeredShellFiberSection : public SectionForceDeformation{
     const Matrix& getSectionTangent( ) ;
 
     //send back the initial tangent 
-    const Matrix& getInitialTangent( ) {return this->getSectionTangent();}
+    const Matrix& getInitialTangent( );
 
     //print out data
     void Print( OPS_Stream &s, int flag ) ;
@@ -113,6 +113,8 @@ class LayeredShellFiberSection : public SectionForceDeformation{
 
 
   private :
+    // initial=true assembles the layers' initial tangents
+    const Matrix& assembleSectionTangent(bool initial);
 
     int nLayers;
     //quadrature data
@@ -124,6 +126,9 @@ class LayeredShellFiberSection : public SectionForceDeformation{
     NDMaterial **theFibers;  //pointers to the materials (fibers)
 
     Vector strainResultant ;
+    // last committed section deformation, restored by revertToLastCommit
+    // and by a rejected setTrialSectionDeformation
+    double committedStrainResultant[8] = {};
 
     static Vector stressResultant ;
 
