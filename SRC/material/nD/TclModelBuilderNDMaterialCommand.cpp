@@ -122,6 +122,9 @@ extern void* OPS_Series3DMaterial(void);
 extern void* OPS_Parallel3DMaterial(void);
 extern void* OPS_ASDConcrete3DMaterial(void);
 extern void* OPS_JiangJianjingConcrete();
+extern void* OPS_AdinaConcrete3D();
+extern void* OPS_AdinaConcrete2D();
+extern void* OPS_AdinaConcrete2DPlateFiber();
 #ifdef _EIGEN3
 extern void* OPS_AllASDPlasticMaterial3Ds(void);
 #endif // _EIGEN3
@@ -1273,6 +1276,24 @@ TclModelBuilderNDMaterialCommand (ClientData clientData, Tcl_Interp *interp, int
 
 	else if(strcmp(argv[1], "JiangJianjingConcrete") == 0) {
 		theMaterial = static_cast<NDMaterial*>(OPS_JiangJianjingConcrete());
+		if (theMaterial == 0)
+			return TCL_ERROR;
+	}
+
+	else if(strcmp(argv[1], "AdinaConcrete3D") == 0) {
+		theMaterial = static_cast<NDMaterial*>(OPS_AdinaConcrete3D());
+		if (theMaterial == 0)
+			return TCL_ERROR;
+	}
+
+	else if(strcmp(argv[1], "AdinaConcrete2D") == 0) {
+		theMaterial = static_cast<NDMaterial*>(OPS_AdinaConcrete2D());
+		if (theMaterial == 0)
+			return TCL_ERROR;
+	}
+
+	else if(strcmp(argv[1], "AdinaConcrete2DPlateFiber") == 0) {
+		theMaterial = static_cast<NDMaterial*>(OPS_AdinaConcrete2DPlateFiber());
 		if (theMaterial == 0)
 			return TCL_ERROR;
 	}

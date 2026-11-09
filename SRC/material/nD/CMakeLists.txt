@@ -85,6 +85,12 @@ target_sources(OPS_Material
     ASDConcrete3DMaterial.cpp
     JiangJianjingConcrete/JiangJianjing.cpp
     JiangJianjingConcrete/JiangJianjingConcrete.cpp
+    AdinaConcrete3D.cpp
+    AdinaConcrete3DFactory.cpp
+    AdinaConcrete2D.cpp
+    AdinaConcrete2DFactory.cpp
+    adinaConcrete3D/Concrete3D.cpp
+    adinaConcrete2D/Concrete2D.cpp
   PUBLIC
     NDMaterial.h
     BeamFiberMaterial.h
@@ -165,6 +171,13 @@ target_sources(OPS_Material
     ASDConcrete3DMaterial.h
     JiangJianjingConcrete/JiangJianjing.h
     JiangJianjingConcrete/JiangJianjingConcrete.h
+    AdinaConcrete3D.h
+    AdinaConcrete2D.h
+    AdinaConcreteOptions.h
+    adinaConcrete3D/Concrete3D.h
+    adinaConcrete3D/BranchTangent.h
+    adinaConcrete3D/TensionSoftening.h
+    adinaConcrete2D/Concrete2D.h
 )
 
 target_include_directories(OPS_Material PUBLIC ${CMAKE_CURRENT_LIST_DIR})

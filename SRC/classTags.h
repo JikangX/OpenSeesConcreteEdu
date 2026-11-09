@@ -572,6 +572,8 @@
 
 #define ND_TAG_InitStrainNDMaterial 7020 // Massimo Petracca ASDEA Software
 #define ND_TAG_JiangJianjingConcrete 7024 // teaching nonlinear-elastic model (Jiang Jianjing, Tsinghua)
+#define ND_TAG_AdinaConcrete3D 7025 // ADINA model 5 concrete, 3D
+#define ND_TAG_AdinaConcrete2D 7026 // ADINA model 5 concrete, plane stress / plate fiber
 #define ND_TAG_ASDPlasticMaterial3D 10000 // For ASDPlasticity-class material
 
 #define ND_TAG_FAM_CS 40801 // Shaohui Zhang, Xiaodong Ji - Tsinghua University

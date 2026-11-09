@@ -31,6 +31,9 @@
 #include <J2Plasticity.h>
 #include <MultiaxialCyclicPlasticity.h> // Gang Wang
 extern void* OPS_JiangJianjingConcrete();
+extern void* OPS_AdinaConcrete3D();
+extern void* OPS_AdinaConcrete2D();
+extern void* OPS_AdinaConcrete2DPlateFiber();
 
 
 // start Yuli Huang & Xinzheng Lu
@@ -118,6 +121,21 @@ TclCommand_addNDMaterial(ClientData clientData, Tcl_Interp *interp,
 
   else if (strcmp(argv[1], "JiangJianjingConcrete") == 0) {
     theMaterial = static_cast<NDMaterial*>(OPS_JiangJianjingConcrete());
+    if (theMaterial == nullptr)
+      return TCL_ERROR;
+  }
+  else if (strcmp(argv[1], "AdinaConcrete3D") == 0) {
+    theMaterial = static_cast<NDMaterial*>(OPS_AdinaConcrete3D());
+    if (theMaterial == nullptr)
+      return TCL_ERROR;
+  }
+  else if (strcmp(argv[1], "AdinaConcrete2D") == 0) {
+    theMaterial = static_cast<NDMaterial*>(OPS_AdinaConcrete2D());
+    if (theMaterial == nullptr)
+      return TCL_ERROR;
+  }
+  else if (strcmp(argv[1], "AdinaConcrete2DPlateFiber") == 0) {
+    theMaterial = static_cast<NDMaterial*>(OPS_AdinaConcrete2DPlateFiber());
     if (theMaterial == nullptr)
       return TCL_ERROR;
   }

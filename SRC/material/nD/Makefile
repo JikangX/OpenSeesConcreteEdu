@@ -102,7 +102,13 @@ OBJS       = NDMaterial.o \
 	VonPapaDamage.o \
 	ASDConcrete3DMaterial.o \
 	JiangJianjingConcrete/JiangJianjing.o \
-	JiangJianjingConcrete/JiangJianjingConcrete.o
+	JiangJianjingConcrete/JiangJianjingConcrete.o \
+	AdinaConcrete3D.o \
+	AdinaConcrete3DFactory.o \
+	AdinaConcrete2D.o \
+	AdinaConcrete2DFactory.o \
+	adinaConcrete3D/Concrete3D.o \
+	adinaConcrete2D/Concrete2D.o
 
 
 all: $(OBJS) 

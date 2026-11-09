@@ -313,6 +313,8 @@
 #include "MinMaxNDMaterial.h"
 #include "ASDConcrete3DMaterial.h"
 #include "JiangJianjingConcrete/JiangJianjingConcrete.h"
+#include "AdinaConcrete3D.h"
+#include "AdinaConcrete2D.h"
 #include "PlasticDamageConcrete3d.h"
 #include "PlasticDamageConcretePlaneStress.h"
 #include "ConcreteS.h"
@@ -2468,6 +2470,12 @@ FEM_ObjectBrokerAllClasses::getNewNDMaterial(int classTag)
 
   case ND_TAG_JiangJianjingConcrete:
       return new JiangJianjingConcrete();
+
+  case ND_TAG_AdinaConcrete3D:
+      return new AdinaConcrete3D();
+
+  case ND_TAG_AdinaConcrete2D:
+      return new AdinaConcrete2D();
 
   case ND_TAG_PlasticDamageConcrete3d:
       return new PlasticDamageConcrete3d();
