@@ -1,0 +1,438 @@
+diff -ruN --strip-trailing-cr '--exclude=ShellNLDKGQ*' production-final/AdinaConcrete2D.cpp production-r3/AdinaConcrete2D.cpp
+--- production-final/AdinaConcrete2D.cpp	2026-10-06 12:40:08.798891200 +0800
++++ production-r3/AdinaConcrete2D.cpp	2026-10-07 00:20:03.036635400 +0800
+@@ -13,6 +13,18 @@
+ #include <limits>
+ #include <stdexcept>
+ 
++namespace {
++// A diverging global iterate is rejected at every integration point. The
++// analysis receives each rejection; print the first ones and then a count,
++// so that millions of identical lines do not dominate the run time.
++void reportRejectedTrial(const char* name,int tag,const std::string& error) {
++    static long count=0;
++    ++count;
++    if(count<=20 || count%100000==0)
++        opserr << name << " " << tag << ": " << error.c_str() << " (rejected trials: " << count << ")" << endln;
++}
++}
++
+ AdinaConcrete2D::AdinaConcrete2D():NDMaterial(0,ND_TAG_AdinaConcrete2D) {revertToStart();}
+ AdinaConcrete2D::AdinaConcrete2D(int tag,const adina::Parameters& p,bool shell,double G)
+     :NDMaterial(tag,ND_TAG_AdinaConcrete2D),parameters(p),plate(shell),
+@@ -59,17 +71,19 @@
+         const double origin=i<3 ? committed.strain[i] : committedShear[i-3];
+         differentOrigin=differentOrigin || v(i)!=origin;
+     }
+-    if(identical && (differentOrigin || parameters.update==adina::Parameters::Update::Iterative)) return 0;
++    if(identical && (differentOrigin || parameters.update!=adina::Parameters::Update::Committed)) return 0;
+     // Compute ALL prospective outputs first. Failed substeps or tangents must
+     // not replace trial history, transverse strain, or any returned buffer.
+     adina::plane::Vector3 e{{v(0),v(1),v(2)}};
+     // Origin: previous iteration (ADINA's in-place WA update, default) or
+     // last commit (-update committed); see adina::Parameters::Update.
+-    const adina::plane::State& origin=
+-        parameters.update==adina::Parameters::Update::Iterative ? trial : committed;
++    // Hybrid: previous iteration with the converged loading reference.
++    const adina::plane::State origin=
++        parameters.update==adina::Parameters::Update::Iterative ? trial :
++        parameters.update==adina::Parameters::Update::Hybrid ? adina::plane::hybridOrigin(committed,trial) : committed;
+     adina::plane::State next;adina::plane::Matrix3 c;std::string error;
+     if(!adina::plane::integrate(parameters,origin,e,next,&c,error)) {
+-        opserr << "AdinaConcrete2D " << getTag() << ": " << error.c_str() << endln;return -1;
++        reportRejectedTrial("AdinaConcrete2D",getTag(),error);return -1;
+     }
+     if(plate && (!std::isfinite(transverseG*v(3)) || !std::isfinite(transverseG*v(4)))) return -1;
+ #ifdef ADINA_TRACE
+@@ -170,7 +184,7 @@
+         v(k++)=h.kappa;v(k++)=h.strength;v(k++)=h.offset;
+     }
+     v(k++)=parameters.tangent==adina::Parameters::Tangent::Secant ? 0. : 1.;
+-    v(k++)=double(int(parameters.update)); // 0 iterative, 1 committed
++    v(k++)=double(int(parameters.update)); // 0 iterative, 1 committed, 2 hybrid
+     v(k++)=parameters.crushedUnloading==adina::Parameters::CrushedUnloading::Original ? 0. : 1.;
+     v(k++)=committed.crushedStrain;v(k++)=trial.crushedStrain;
+     v(k++)=committed.released;v(k++)=trial.released;
+@@ -216,7 +230,7 @@
+     }
+     p.tangent=adina::Parameters::Tangent::Algorithmic;p.update=adina::Parameters::Update::Committed;
+     if(!legacy && !v2) {
+-        if((v(k)!=0. && v(k)!=1.) || (v(k+1)!=0. && v(k+1)!=1.) || (v(k+2)!=0. && v(k+2)!=1.))
++        if((v(k)!=0. && v(k)!=1.) || (v(k+1)!=0. && v(k+1)!=1. && v(k+1)!=2.) || (v(k+2)!=0. && v(k+2)!=1.))
+             return -1;
+         p.tangent=v(k++)==0. ? adina::Parameters::Tangent::Secant : adina::Parameters::Tangent::Algorithmic;
+         p.update=static_cast<adina::Parameters::Update>(int(v(k++)));
+diff -ruN --strip-trailing-cr '--exclude=ShellNLDKGQ*' production-final/AdinaConcrete2DFactory.cpp production-r3/AdinaConcrete2DFactory.cpp
+--- production-final/AdinaConcrete2DFactory.cpp	2026-10-06 12:40:08.864842200 +0800
++++ production-r3/AdinaConcrete2DFactory.cpp	2026-10-07 00:20:03.088859900 +0800
+@@ -13,7 +13,7 @@
+         opserr << "Want: nDMaterial AdinaConcrete2D tag E nu ft fc epsc fu epsu "
+                 "<-G transverseG> <-rho rho> <-retention normal shear> <-controls beta gamma kappa alpha> "
+                 "<-envelope 24_values> <-maxStrainIncrement value> <-fractureEnergy Gf Lch> "
+-                "<-tangent secant|algorithmic> <-update iterative|committed> "
++                "<-tangent secant|algorithmic> <-update committed|iterative|hybrid> "
+                 "<-crushedUnloading original|elastic>\n";
+         return nullptr;
+     }
+diff -ruN --strip-trailing-cr '--exclude=ShellNLDKGQ*' production-final/AdinaConcrete3D.cpp production-r3/AdinaConcrete3D.cpp
+--- production-final/AdinaConcrete3D.cpp	2026-10-06 12:40:08.836466800 +0800
++++ production-r3/AdinaConcrete3D.cpp	2026-10-07 00:20:03.061945800 +0800
+@@ -9,6 +9,18 @@
+ #include <limits>
+ #include <stdexcept>
+ 
++namespace {
++// A diverging global iterate is rejected at every integration point. The
++// analysis receives each rejection; print the first ones and then a count,
++// so that millions of identical lines do not dominate the run time.
++void reportRejectedTrial(const char* name,int tag,const std::string& error) {
++    static long count=0;
++    ++count;
++    if(count<=20 || count%100000==0)
++        opserr << name << " " << tag << ": " << error.c_str() << " (rejected trials: " << count << ")" << endln;
++}
++}
++
+ 
+ AdinaConcrete3D::AdinaConcrete3D():NDMaterial(0,ND_TAG_AdinaConcrete3D) {revertToStart();}
+ AdinaConcrete3D::AdinaConcrete3D(int tag,const adina::Parameters& p)
+@@ -32,11 +44,13 @@
+     adina::Vector6 eps;for(int i=0;i<6;++i) eps[i]=v(i);
+     // A repeated request for the current trial strain must not apply a
+     // second (zero) increment to the in-place iterative history.
+-    if(parameters.update==adina::Parameters::Update::Iterative && eps==trial.strain) return 0;
+-    const adina::State& origin=parameters.update==adina::Parameters::Update::Iterative ? trial : committed;
++    if(parameters.update!=adina::Parameters::Update::Committed && eps==trial.strain) return 0;
++    // Hybrid: previous iteration with the converged loading reference.
++    const adina::State origin=parameters.update==adina::Parameters::Update::Iterative ? trial :
++        parameters.update==adina::Parameters::Update::Hybrid ? adina::hybridOrigin(committed,trial) : committed;
+     adina::State next;adina::Matrix6 c;std::string error;
+     if(!adina::integrate(parameters,origin,eps,next,&c,error)) {
+-        opserr << "AdinaConcrete3D " << getTag() << ": " << error.c_str() << endln;return -1;
++        reportRejectedTrial("AdinaConcrete3D",getTag(),error);return -1;
+     }
+     trial=next;synchronize(c);return 0;
+ }
+@@ -121,7 +135,7 @@
+         v(k++)=h.kappa;v(k++)=h.strength;v(k++)=h.offset;
+     }
+     v(k++)=parameters.tangent==adina::Parameters::Tangent::Secant ? 0. : 1.;
+-    v(k++)=double(int(parameters.update)); // 0 iterative, 1 committed
++    v(k++)=double(int(parameters.update)); // 0 iterative, 1 committed, 2 hybrid
+     v(k++)=parameters.crushedUnloading==adina::Parameters::CrushedUnloading::Original ? 0. : 1.;
+     v(k++)=committed.crushedStrain;v(k++)=trial.crushedStrain;
+     return k==wireSize ? channel.sendVector(getDbTag(),commitTag,v) : -1;
+@@ -161,7 +175,7 @@
+     }
+     p.tangent=adina::Parameters::Tangent::Algorithmic;p.update=adina::Parameters::Update::Committed;
+     if(!legacy && !v2) {
+-        if((v(k)!=0. && v(k)!=1.) || (v(k+1)!=0. && v(k+1)!=1.) || (v(k+2)!=0. && v(k+2)!=1.))
++        if((v(k)!=0. && v(k)!=1.) || (v(k+1)!=0. && v(k+1)!=1. && v(k+1)!=2.) || (v(k+2)!=0. && v(k+2)!=1.))
+             return -1;
+         p.tangent=v(k++)==0. ? adina::Parameters::Tangent::Secant : adina::Parameters::Tangent::Algorithmic;
+         p.update=static_cast<adina::Parameters::Update>(int(v(k++)));
+diff -ruN --strip-trailing-cr '--exclude=ShellNLDKGQ*' production-final/AdinaConcrete3DFactory.cpp production-r3/AdinaConcrete3DFactory.cpp
+--- production-final/AdinaConcrete3DFactory.cpp	2026-10-06 12:40:08.870535000 +0800
++++ production-r3/AdinaConcrete3DFactory.cpp	2026-10-07 00:20:03.102880200 +0800
+@@ -11,7 +11,7 @@
+         opserr << "Want: nDMaterial AdinaConcrete3D tag E nu ft fc epsc fu epsu "
+                 "<-rho rho> <-retention normal shear> <-controls beta gamma kappa alpha> "
+                 "<-envelope 24_values> <-maxStrainIncrement value> <-fractureEnergy Gf Lch> "
+-                "<-tangent secant|algorithmic> <-update iterative|committed> "
++                "<-tangent secant|algorithmic> <-update committed|iterative|hybrid> "
+                 "<-crushedUnloading original|elastic>\n";
+         return nullptr;
+     }
+diff -ruN --strip-trailing-cr '--exclude=ShellNLDKGQ*' production-final/AdinaConcreteOptions.h production-r3/AdinaConcreteOptions.h
+--- production-final/AdinaConcreteOptions.h	2026-10-06 12:40:08.884427400 +0800
++++ production-r3/AdinaConcreteOptions.h	2026-10-07 00:20:03.114193200 +0800
+@@ -7,9 +7,9 @@
+ 
+ namespace adina {
+ /** Record explicit solver options so order-independent defaults can be used
+- * for the optional continuous cohesive law. Brittle original mode retains
+- * secant/iterative; regularized mode defaults to committed replay and its
+- * algorithmic Jacobian. Newton trial overshoots must not become irreversible
++ * for the optional continuous cohesive law. Brittle original mode uses
++ * secant/committed (as ADINA); regularized mode defaults to committed replay
++ * and its algorithmic Jacobian. Newton trial overshoots must not become irreversible
+  * physical cohesive damage before an increment has actually converged.
+  * Explicit user options always take precedence, including research runs of
+  * the path-dependent iterative variant; those require separate verification.
+@@ -41,6 +41,7 @@
+     else if(tangent && is("algorithmic")) p.tangent=Parameters::Tangent::Algorithmic;
+     else if(update && is("iterative")) p.update=Parameters::Update::Iterative;
+     else if(update && is("committed")) p.update=Parameters::Update::Committed;
++    else if(update && is("hybrid")) p.update=Parameters::Update::Hybrid;
+     else if(crushed && is("original")) p.crushedUnloading=Parameters::CrushedUnloading::Original;
+     else if(crushed && is("elastic")) p.crushedUnloading=Parameters::CrushedUnloading::Elastic;
+     else return -1;
+diff -ruN --strip-trailing-cr '--exclude=ShellNLDKGQ*' production-final/adinaConcrete2D/Concrete2D.cpp production-r3/adinaConcrete2D/Concrete2D.cpp
+--- production-final/adinaConcrete2D/Concrete2D.cpp	2026-10-06 12:40:08.787423900 +0800
++++ production-r3/adinaConcrete2D/Concrete2D.cpp	2026-10-07 00:20:03.027431400 +0800
+@@ -127,7 +127,11 @@
+ State step(const Parameters& p,const State& old,const Vector3& target) {
+     State out=old;out.strain=target;
+     const double f=measure(p,old.stress);
+-    const bool loading=std::abs(f-old.maximumLoading)<=std::abs(old.maximumLoading)*1.e-8;
++    // Loading: the loading function has reached its recorded maximum. In
++    // the original update f never exceeds the maximum (it is raised to f at
++    // every update), so this equals CDMOD's equality test; Hybrid origins can
++    // carry the smaller converged maximum, see Parameters::Update::Hybrid.
++    const bool loading=f>=old.maximumLoading-std::abs(old.maximumLoading)*1.e-8;
+     double angle=old.hasCrackFrame && !old.crushed ? old.angle : principalAngle(old.stress);
+     Vector3 sig=stressToLocal(old.stress,angle);
+     // PRNCPL's legacy EPSL(3)=0 assumes strain and stress are coaxial. The
+@@ -295,7 +299,7 @@
+     const Strength strength=strengthEnvelope(p,{{sig[0],sig[1],0.}});
+     const double f=measure(p,s.stress);
+     // Same test as CDMOD's IKAS; the loading function can be negative (alpha).
+-    const bool loading=std::abs(f-s.maximumLoading)<=std::abs(s.maximumLoading)*1.e-8;
++    const bool loading=f>=s.maximumLoading-std::abs(s.maximumLoading)*1.e-8;
+     std::array<double,3> yp{{p.E,p.E,p.E}};
+     if(loading && std::abs(sig[0])+std::abs(sig[1])>1.e-5*p.ft)
+         for(int i=0;i<2;++i) if(sig[i]<.001*strength.compression) {
+@@ -343,6 +347,19 @@
+     Matrix3 c{};c[0][0]=c[1][1]=E/(1.-nu*nu);
+     c[0][1]=c[1][0]=nu*c[0][0];c[2][2]=E/(2.*(1.+nu));return c;
+ }
++State hybridOrigin(const State& committed,const State& iterate) {
++    State origin=iterate;
++    if(iterate.hasCrackFrame==committed.hasCrackFrame && iterate.crushed==committed.crushed &&
++       iterate.released==committed.released && iterate.open==committed.open &&
++       iterate.angle==committed.angle && iterate.crackStrain==committed.crackStrain) {
++        origin.maximumLoading=committed.maximumLoading;
++        for(int i=0;i<2;++i)
++            if(iterate.tension[i].strength==committed.tension[i].strength &&
++               iterate.tension[i].offset==committed.tension[i].offset)
++                origin.tension[i].kappa=committed.tension[i].kappa;
++    }
++    return origin;
++}
+ bool validateState(const State& s,std::string& error) {
+     for(double x:s.strain) if(!std::isfinite(x)) {error="non-finite committed strain";return false;}
+     for(double x:s.stress) if(!std::isfinite(x)) {error="non-finite committed stress";return false;}
+@@ -362,7 +379,8 @@
+     for(double x:target) if(!std::isfinite(x)) {error="non-finite trial strain";return false;}
+     const double dx=target[0]-committed.strain[0],dy=target[1]-committed.strain[1],
+                  dg=target[2]-committed.strain[2];
+-    const double ratio=std::hypot(std::hypot(dx,dy),dg/std::sqrt(2.))/p.maxStrainIncrement;
++    // maxStrainIncrement 0: no subdivision (one update, as CDMOD).
++    const double ratio=p.maxStrainIncrement>0. ? std::hypot(std::hypot(dx,dy),dg/std::sqrt(2.))/p.maxStrainIncrement : 0.;
+     if(!std::isfinite(ratio) || ratio>10000.) {error="2D substep limit (10000) exceeded";return false;}
+     const int n=std::max(1,int(std::ceil(ratio-32.*std::numeric_limits<double>::epsilon()*std::max(1.,ratio))));
+     try {
+diff -ruN --strip-trailing-cr '--exclude=ShellNLDKGQ*' production-final/adinaConcrete2D/Concrete2D.h production-r3/adinaConcrete2D/Concrete2D.h
+--- production-final/adinaConcrete2D/Concrete2D.h	2026-10-06 12:40:08.785412100 +0800
++++ production-r3/adinaConcrete2D/Concrete2D.h	2026-10-07 00:20:03.028445100 +0800
+@@ -52,5 +52,7 @@
+ bool integrate(const Parameters&, const State& committed, const Vector3& target,
+                State& trial, Matrix3* tangent, std::string& error);
+ bool validateState(const State&, std::string& error);
++// Parameters::Update::Hybrid origin; see adina::hybridOrigin.
++State hybridOrigin(const State& committed, const State& iterate);
+ } } // namespace adina::plane
+ #endif
+diff -ruN --strip-trailing-cr '--exclude=ShellNLDKGQ*' production-final/adinaConcrete3D/Concrete3D.cpp production-r3/adinaConcrete3D/Concrete3D.cpp
+--- production-final/adinaConcrete3D/Concrete3D.cpp	2026-10-06 12:40:08.789440700 +0800
++++ production-r3/adinaConcrete3D/Concrete3D.cpp	2026-10-07 00:20:03.030443300 +0800
+@@ -277,7 +277,11 @@
+     State out=old;
+     out.strain=target;
+     const double fOld=loadingMeasure(p,old.stress);
+-    bool loading=std::abs(fOld-old.maximumLoading)<=std::abs(old.maximumLoading)*1.e-8;
++    // Loading: the loading function has reached its recorded maximum. In
++    // the original update f never exceeds the maximum (it is raised to f at
++    // every update), so this equals CMOD3D's equality test; Hybrid origins can
++    // carry the smaller converged maximum, see Parameters::Update::Hybrid.
++    bool loading=fOld>=old.maximumLoading-std::abs(old.maximumLoading)*1.e-8;
+     // PRNCP3 is also used after crushing, even when an earlier fixed crack
+     // frame exists. Its smallest principal direction drives the crushed law.
+     Frame frame=(old.hasCrackFrame && !old.crushed) ? old.frame : principalStress(old.stress).frame;
+@@ -465,7 +469,7 @@
+     const Vector6 sig=stressToLocal(s.stress,frame),eps=strainToLocal(s.strain,frame);
+     const Strength strength=strengthEnvelope(p,{{sig[0],sig[1],sig[2]}});
+     const double f=loadingMeasure(p,s.stress);
+-    const bool loading=std::abs(f-s.maximumLoading)<=std::abs(s.maximumLoading)*1.e-8;
++    const bool loading=f>=s.maximumLoading-std::abs(s.maximumLoading)*1.e-8;
+     std::array<double,3> yp {{p.E,p.E,p.E}};
+     if(loading && std::abs(sig[0])+std::abs(sig[1])+std::abs(sig[2])>1.e-5*p.ft)
+         for(int i=0;i<3;++i) if(sig[i]<.001*strength.compression) {
+@@ -616,7 +620,7 @@
+          fu<0. && fu>=fc && epsu<epsc && fc/epsc<=E && beta>0. && beta<1. &&
+          gamma>0. && kappa>=0. && kappa<=1. && normalRetention>=0. &&
+          normalRetention<=1. && shearRetention>=0. && shearRetention<=1. &&
+-         rho>=0. && maxStrainIncrement>0.)) {
++         rho>=0. && maxStrainIncrement>=0.)) {
+         error="invalid signs, strength/strain ordering, elastic constants or retention factors";return false;
+     }
+     for(int i=0;i<6;++i) {
+@@ -651,6 +655,19 @@
+     if(!valid) {error="singular rational compression curve";return false;}
+     error.clear();return true;
+ }
++State hybridOrigin(const State& committed,const State& iterate) {
++    State origin=iterate;
++    if(iterate.hasCrackFrame==committed.hasCrackFrame && iterate.crushed==committed.crushed &&
++       iterate.openCracks==committed.openCracks && iterate.frame==committed.frame &&
++       iterate.crackStrain==committed.crackStrain) {
++        origin.maximumLoading=committed.maximumLoading;
++        for(int i=0;i<3;++i)
++            if(iterate.tension[i].strength==committed.tension[i].strength &&
++               iterate.tension[i].offset==committed.tension[i].offset)
++                origin.tension[i].kappa=committed.tension[i].kappa;
++    }
++    return origin;
++}
+ bool integrate(const Parameters& p,const State& committed,const Vector6& strain,
+                State& trial,Matrix6* tangent,std::string& error) {
+     if(!p.validate(error)) return false;
+@@ -668,8 +685,9 @@
+     for(int i=0;i<6;++i)
+         delta=std::hypot(delta,(strain[i]-committed.strain[i])*(i<3 ? 1. : std::sqrt(.5)));
+     // Guard conversion and pathological work before converting ceil to int.
+-    if(delta/p.maxStrainIncrement>10000.) {error="trial increment requires more than 10000 substeps";return false;}
+-    const double ratio=delta/p.maxStrainIncrement;
++    // maxStrainIncrement 0: no subdivision (one update, as CMOD3D).
++    const double ratio=p.maxStrainIncrement>0. ? delta/p.maxStrainIncrement : 0.;
++    if(!std::isfinite(ratio) || ratio>10000.) {error="trial increment requires more than 10000 substeps";return false;}
+     const double roundoff=32.*std::numeric_limits<double>::epsilon()*std::max(1.,ratio);
+     const int n=std::max(1,int(std::ceil(ratio-roundoff)));
+     try {
+diff -ruN --strip-trailing-cr '--exclude=ShellNLDKGQ*' production-final/adinaConcrete3D/Concrete3D.h production-r3/adinaConcrete3D/Concrete3D.h
+--- production-final/adinaConcrete3D/Concrete3D.h	2026-10-06 12:40:08.795479300 +0800
++++ production-r3/adinaConcrete3D/Concrete3D.h	2026-10-07 00:20:03.034633700 +0800
+@@ -26,9 +26,12 @@
+     double epsc = -0.002, fu = -6., epsu = -0.006;
+     double beta = 0.5, gamma = 1., kappa = 0.7, alpha = 0.;
+     double normalRetention = 1.e-4, shearRetention = 0.5, rho = 0.;
+-    // Maximum Frobenius norm of the strain tensor increment per substep.
+-    // This rotation-invariant numerical control is not a material parameter.
+-    double maxStrainIncrement = 2.e-5;
++    // Optional subdivision of a trial increment: maximum Frobenius norm of the
++    // strain tensor increment per substep (rotation invariant; a numerical
++    // control, not a material parameter). 0 (default) = no subdivision: one
++    // update per increment, as CDMOD/CMOD3D are called once per element
++    // integration point with the total increment from the converged state.
++    double maxStrainIncrement = 0.;
+     // Optional extension, disabled by default. Gf has units stress*length;
+     // Lch must be supplied for this material point's actual crack bandwidth.
+     double fractureEnergy = 0., characteristicLength = 0.;
+@@ -44,19 +47,32 @@
+     enum class Tangent {Secant, Algorithmic};
+     Tangent tangent = Tangent::Secant;
+     /** Origin of each trial update; used by the OpenSees adapters only.
+-     * Iterative: ADINA's own scheme. The element loops update the history
+-     * array WA in place on every equilibrium iteration (ECHECK sets IUPDT=0,
+-     * CDMOD/CMOD3D overwrite SIG, EPS, EVMAX, ANGLE, CRKSTR, PGRAV), so each
+-     * update starts from the previous iteration and a crack or crushing event
+-     * met during the iterations of a step is not undone within that step.
+-     * Committed: every trial replays from the last converged state. A brittle
+-     * crack can then appear and disappear between iterations; when the
+-     * equilibrium point falls inside the stress jump at ft no discrete
+-     * solution exists and Newton cycles (wall sw1-1, first lateral step).
+-     * Both modes restart from the committed state after revertToLastCommit.
++     * Committed (default, ADINA): every trial integrates the total increment
++     * from the last converged state. This is what the original program does:
++     * in UNBLD each equilibrium iteration reads the element group data
++     * (stresses, strains, history WA) from unit IT2 and never writes them back;
++     * the history is stored only when the stiffness of the next step is formed
++     * from the converged increment. Verified on the compiled all_adina.for with
++     * WRITEs in CDMOD (B07 deck: all iterations of a step start from the same
++     * converged stresses and EVMAX) and by running the same finite-element
++     * models in ADINA and OpenSees (tests/adinaConcreteReview/ADINA84). A brittle
++     * crack can appear and disappear between iterations; when the equilibrium
++     * point falls inside the stress jump at ft, Newton may cycle. ADINA does
++     * the same (it stops with the iteration limit).
++     * Iterative (OPTIONAL, not ADINA): each trial starts from the previous
++     * iteration, so crack and crushing events met during the iterations of a
++     * step persist within that step. The result depends on the iteration path.
++     * Hybrid (OPTIONAL, not ADINA): as Iterative, but while a point has no new
++     * event in the step its loading/unloading reference (maximum of the
++     * loading function, cohesive damage maximum) is the converged value. In
++     * Iterative mode overshoot/return iterates unload and reload with E and
++     * ratchet the compressive stress above the curve (up to +36% at half the
++     * peak strain for overshoot/return iterates of 30%); Hybrid removes this,
++     * and with monotonic iterates it equals Iterative.
++     * All modes restart from the committed state after revertToLastCommit.
+      */
+-    enum class Update {Iterative, Committed};
+-    Update update = Update::Iterative;
++    enum class Update {Iterative, Committed, Hybrid};
++    Update update = Update::Committed;
+     /** OPTIONAL extension, not an ADINA equation (default Original).
+      * Original (CDMOD/CMOD3D, PGRAV=100): a crushed point always follows the
+      * softening-curve tangent, also when its strain decreases. Unloading thus
+@@ -130,5 +146,10 @@
+  */
+ bool integrate(const Parameters&, const State& committed, const Vector6& strain,
+                State& trial, Matrix6* tangent, std::string& error);
++/** Origin of the next trial update for Parameters::Update::Hybrid: the
++ * previous iterate, with the converged loading-function maximum and cohesive
++ * damage maxima when no crack/crushing event occurred since the commit.
++ */
++State hybridOrigin(const State& committed, const State& iterate);
+ } // namespace adina
+ #endif
+--- cases2/ShellNLDKGQ.cpp.orig	2026-10-06 14:01:28.640534600 +0800
++++ production-r3/ShellNLDKGQ.cpp	2026-10-07 00:20:03.237558800 +0800
+@@ -1407,8 +1407,15 @@
+ 
+ //*********************************************************************
+ 
++// Constitutive updates are also invoked from Domain::update(), so that a
++// rejected section reaches the analysis, which reverts the attempted step.
++int ShellNLDKGQ::update()
++{
++  return formResidAndTangent(0);
++}
++
+ //form residual and tangent
+-void  
++int
+ ShellNLDKGQ::formResidAndTangent( int tang_flag ) 
+ {
+ 	//
+@@ -1730,6 +1737,12 @@
+ 		}//end for q
+ 
+ 		success = materialPointers[i]->setTrialSectionDeformation(strain);
++		if (success != 0) {
++			// No partial quadrature result is assembled with stale stresses.
++			stiff.Zero();
++			resid.Zero();
++			return success;
++		}
+ 
+ 		//compute the stress
+ 		stress = materialPointers[i]->getStressResultant( );
+@@ -1864,7 +1877,7 @@
+ 
+ 	}//end for i gauss loop
+ 
+-	return;
++	return 0;
+ 
+ }
+ 
+--- cases2/ShellNLDKGQ.h.orig	2026-10-06 14:01:28.760235200 +0800
++++ production-r3/ShellNLDKGQ.h	2026-10-07 00:20:03.253723900 +0800
+@@ -78,6 +78,9 @@
+     //return number of dofs
+     int getNumDOF( ) ;
+ 
++    // Section updates are reported to Domain::update().
++    int update( ) ;
++
+     //commit state
+     int commitState( ) ;
+     
+@@ -165,7 +168,7 @@
+     void formInertiaTerms( int tangFlag ) ;
+ 
+     //form residual and tangent					  
+-    void formResidAndTangent( int tang_flag ) ;
++    int formResidAndTangent( int tang_flag ) ;
+ 
+     //compute Bdrill matrix
+     //double* computeBdrill( int node, const double shp[3][4] ) ;

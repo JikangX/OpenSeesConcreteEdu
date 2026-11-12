@@ -719,6 +719,33 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND Python_FOUND)
   set_target_properties(OpenSees PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
 endif()
 
+# AdinaConcrete2D/3D adapter and rejected-analysis regressions, linked against
+# the same interpreter globals and libraries as the Tcl executable:
+#   cmake --build <build> --target AdinaConcrete2DAdapterTests
+foreach(_test IN ITEMS AdinaConcrete2DAdapterTests AdinaConcrete3DAdapterTests
+                       ConcreteAnalysisFailureTests)
+  if(_test STREQUAL "AdinaConcrete2DAdapterTests")
+    set(_source tests/materials/adina_2d/adapter_tests.cpp)
+  elseif(_test STREQUAL "AdinaConcrete3DAdapterTests")
+    set(_source tests/materials/adina_3d/adapter_tests.cpp)
+  else()
+    set(_source tests/materials/adina_2d/analysis_failure_tests.cpp)
+  endif()
+  add_executable(${_test} EXCLUDE_FROM_ALL
+    ${CMAKE_CURRENT_SOURCE_DIR}/${_source}
+    ${OPS_SRC_DIR}/tcl/tclMain.cpp
+    ${OPS_SRC_DIR}/tcl/commands.cpp
+    ${OPS_SRC_DIR}/api/elementAPI_TCL.cpp
+    ${OPS_SRC_DIR}/actor/objectBroker/FEM_ObjectBrokerAllClasses.cpp)
+  if(NOT TARGET TCL::TCL)
+    target_include_directories(${_test} PRIVATE ${TCL_INCLUDE_PATH})
+  endif()
+  target_link_libraries(${_test} $<TARGET_PROPERTY:OpenSees,LINK_LIBRARIES>)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND Python_FOUND)
+    set_target_properties(${_test} PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+  endif()
+endforeach()
+
 
 #
 # OpenSeesSP Tcl Parallel Interpreter

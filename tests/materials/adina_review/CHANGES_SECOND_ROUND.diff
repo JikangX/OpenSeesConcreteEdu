@@ -1,0 +1,25 @@
+diff --git a/production-at-report/adinaConcrete3D/Concrete3D.cpp b/production-final/adinaConcrete3D/Concrete3D.cpp
+index 3d1f88f..8c9e60a 100644
+--- a/production-at-report/adinaConcrete3D/Concrete3D.cpp
++++ b/production-final/adinaConcrete3D/Concrete3D.cpp
+@@ -293,8 +293,19 @@ State step(const Parameters& p, const State& old, const Vector6& target) {
+             if((a>0. && b<=0.) || (a<0. && b>=0.)) {sig[i]=0.;eps0[i]=out.tension[i].offset;}
+         }
+     }
++    // CMOD3D obtains SIGCP/EPSCP (curve and MOD45 threshold) from the KKK=1
++    // call of CRAK3D. With exactly one open crack (label 111) it sorts the
++    // crack-normal stress together with the two PRINCIPAL values of the
++    // transverse 2x2 block, not its normal components; with 0 or 2 cracks it
++    // uses the crack-frame normal stresses (label 107), which is what `sig`
++    // holds. The distinction matters whenever transverse shear is present.
++    std::array<double,3> envelopeStress {{sig[0],sig[1],sig[2]}};
++    if(old.hasCrackFrame && !old.crushed && old.openCracks==1) {
++        const double m=.5*(sig[1]+sig[2]),r=std::hypot(.5*(sig[1]-sig[2]),sig[4]);
++        envelopeStress={{sig[0],m+r,m-r}};
++    }
+     Strength strength=old.crushed ? Strength{old.crushingStress,old.crushingStrain,p.ft}
+-                                 : strengthEnvelope(p,{{sig[0],sig[1],sig[2]}});
++                                 : strengthEnvelope(p,envelopeStress);
+     std::array<double,3> yp {{p.E,p.E,p.E}};
+     if (loading && std::abs(sig[0])+std::abs(sig[1])+std::abs(sig[2])>1.e-5*p.ft)
+         for (int i=0; i<3; ++i)

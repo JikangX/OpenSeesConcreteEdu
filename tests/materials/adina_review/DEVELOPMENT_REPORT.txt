@@ -1,0 +1,166 @@
+ADINA 混凝土：后续开发与测试报告
+日期：2026-10-06（Asia/Shanghai）
+生产目录：C:/Work/OpenSees/SRC/material/nD/
+
+结论：已安装独立复查版本，继续修复生产代码并重新构建、验证。
+接口、已覆盖的子程序、材料点、解析裂缝带能量及指定重启测试通过；
+构件精度和步长稳定性仍未合格，不能宣布整个迁移项目验收通过。
+
+一、交付与代码身份
+独立复查的 work/ 已备份安装。旧 PROGRAM_DESCRIPTION 的生产未安装状态已过时。
+本轮未改 work/、src-before/ 或旧差异，它们继续作为历史证据。
+当前生产核心快照：tests/adinaConcreteReview/production-at-report/
+相对独立复查版本的核心差异：tests/adinaConcreteReview/CHANGES_AFTER_REVIEW.diff
+数值与哈希汇总：tests/adinaConcreteReview/DEVELOPMENT_REPORT.json
+生产可执行文件：C:/Work/OpenSees/bm/OpenSees.exe
+本轮全部证据：C:/Work/OpenSees/tmp/adina-development-20261006/
+安装前备份：tests/adinaConcreteReview/installed-backup-20261006-092129/
+
+二、本轮修复（源码有详细注释）
+1. LayeredShellFiberSection 的 getInitialTangent 原来返回当前损伤切线。
+   新实现用共享厚度积分函数分别组装初始和当前矩阵，初始矩阵取各层
+   getInitialTangent。修复恢复后 ShellMITC4 钻转惩罚改变造成的抗力偏差。
+   本轮没有修改原 Fortran，也没有替换原壳单元的物理方程。
+2. AdinaConcrete2D iterative 模式对完全相同应变不再做零增量更新。
+   这样 commit、Domain.update、restore、rollback 不会仅因重复请求改变历史。
+   committed 模式原有的 Jacobian 重算约定保留。
+3. AdinaConcrete3D 压碎后最终释放使用更新后应力主轴，对应 CMOD3D 标号60
+   PRNCP3 和 DCRAK3 IK=4；旧主轴在非比例路径中错误保留/提前释放应力。
+   sw1-1 参数的保留路径，最大误差/|fc| 由约0.989降至1.19e-6；
+   旋转路径由约0.946降至4.67e-8。原参考没有修补。
+4. 3D getCopy 清零 dbTag，避免已存盘原型的兄弟积分点覆盖同一数据库身份。
+5. 两维 recvSelf：压碎后的拉伸历史已冻结，不能再用旧拉伸最大应变约束
+   后续压碎应变。仍检查历史有限性、参数兼容性、枚举和坐标。
+   新增“先拉裂、再压碎、继续增加拉伸应变”的真实路径往返测试。
+6. 3D 可选黏聚扩展：压缩破坏时抗拉交互阈值可能非正，不能据此建立
+   负强度的新拉伸面。由原压缩检查处理该状态，阻止非法 form 调用。
+7. 断裂能的工厂默认选项恢复为 algorithmic + committed，显式用户选项优先，
+   不受选项顺序影响。原模式仍为 secant + iterative + original；
+   不把尚未通过的 iterative 黏聚组合继承为已验证模式。
+   C++ 直接构造材料时需显式设置 Parameters.tangent/update。
+8. 回归测试显式区分 secant 迭代矩阵和 algorithmic 真正 Jacobian。
+   更新v3长度、验证v1/v2读取、坏枚举拒绝、复制数据库身份；没有放宽误差。
+   解析分层壳力平衡阈值反而由1e-6收紧到1e-8 N，以低于2e-7 N解析力误差门槛。
+9. 墙加载驱动从全部实际位移记录推导终止时刻，并显式补末端零位移样本，
+   useLast防止末端舍入改变回零时刻。没有删减输入样本，混凝土参数未调整。
+   原cases/的13次结果保留；发现末端最大1mm协议错位后，重新运行13次，
+   cases-protocol-v2作为中间证据。本报告采用阈值修复后新配对执行文件的
+   cases-final-v6；此前约55%步长差不能脱离此协议问题单独引用。
+10. 三维各开裂分支采用共用exceedsTensileCutoff，使用64epsilon的应力尺度
+    舍入邻域稳定判断主应力，保留CMOD3D首次严格比较、CRAK3D指定分支
+    包含等号比较。首次候选统一改为严格比较导致24个原等号子程序失败，
+    修正比较语义后重新审计全部通过；保留subroutines-v5失败证据。
+    增加20个随机方向、精确阈值经过后关闭的路径，材料参数与验收误差未调整。
+
+三、验证通过项与严格边界
+逐子程序：7877条，0个未解释失败（subroutines-v6）。
+2D回归：225475内核，6755适配器/分层截面；真实line-search失败传播/域回滚通过。
+3D回归：35193内核，1980适配器检查；比旧回归增加12600项精确阈值旋转检查。
+Tcl：7136分层壳检查，954实体/解析/存盘检查，材料失败传播通过。
+跨进程数据库：6组选项，每组比较41个续算状态；逐步比较节点位移、单元抗力、
+截面变形、所有层应力/应变/裂缝状态，同时强制失败再回滚。默认原模式及
+explicit iterative GF组合逐位一致；其他组合最大缩放差小于3e-12。
+塑性钢筋RC膜片：显式 algorithmic + committed 完成3967400检查。
+默认 iterative 在mesh=2的“nu=0横向位移应为0”门槛失败；保留失败日志，未取消该条件。
+可选断裂能：62736内核；默认工厂设置的69252解析壳检查，n=1/2/4/8与直接/包装两接口。
+另外 explicit algorithmic/committed 及 elastic卸载选项各重做69252壳检查。
+最大完整断裂功相对误差约6.4e-14；检查释放、不恢复损伤、再张开、塑性钢筋、真实数据库。
+这些是受控Mode-I证明，不能推广为任意多轴、受压/混合模式或构件网格客观性。
+
+2D全路径：88组、130544步；68组<1e-9|fc|，6组<=1e-6|fc|，
+另外6组开裂阈值舍入平局及8组原CRAKID多裂缝缺陷路径，全部保留分歧。
+3D全路径：36组，16组在2e-6|fc|原文应力门槛内，12组双方都在SP1范围外停止；
+另8组裂缝闭合/旋转路径有显著分歧，DCA符号/计数、方向排列和零阈值均需定位。
+原文返回码可能为0但步数不全；新工具按步数识别截断。8组不能按“无差别迁移”计为通过，
+须逐步结合独立张量/物理面验证继续定位。现有C++旋转/物理闭合回归不替代每一原路径解释。
+新增从保留全路径输出独立变换应力的objectivity.json。修复前C++的manual参数
+有三条路径超2e-6|fc|，最大约0.0923|fc|；修复后完整路径对均通过该门槛，
+最大应力差约4.8e-14|fc|。首次分歧来自抗拉精确阈值的分支舍入；仍不能把
+其他原文分歧全部归因于原文缺陷，也不能因坐标客观性通过就接受所有原文对照。
+
+四、本轮构件结果（未拟合参数）
+ADINA和PlainConcrete从同一引擎对象/库新配对链接。原forumat.for及PlainConcrete.f90哈希未改变。
+两模型的几何、钢筋、截面/边界/加载/驱动相同；混凝土E与nu的定义仍有模型差别，
+不能把全部结果差异都归因于迁移误差。原混凝土包装仅禁用不兼容的钢筋STATEV注入。
+13次运行：8次完整、5次失败。全部已接受步的提交后残差没有超过求解容差；
+没有跳过失败增量或删减位移记录。按记录长度终止并显式回零；不再保留
+硬编码50.1造成的无记录零位移停留。失败曲线的均值仅属于已达到点。
+墙指标：同号且位移位于实验点[0.95,1.02]区间的最大绝对反力；不是逐循环配准误差。
+梁指标：在11个固定、已覆盖挠度点插值；与旧报告选点不同，均值不可混用。
+
+sw1-1-original-dt0.02: complete, 点数=2360, 已达点平均绝对误差=30.04%
+sw1-1-elastic-dt0.02: complete, 点数=2360, 已达点平均绝对误差=17.76%
+sw1-1-plain-dt0.02: failed, 点数=2269, 已达点平均绝对误差=4.40%
+sw1-3-original-dt0.02: failed, 点数=211, 已达点平均绝对误差=5.90%
+sw1-3-elastic-dt0.02: complete, 点数=2360, 已达点平均绝对误差=40.93%
+sw1-3-plain-dt0.02: failed, 点数=618, 已达点平均绝对误差=15.06%
+sw2-2-original-dt0.02: complete, 点数=2345, 已达点平均绝对误差=123.90%
+sw2-2-elastic-dt0.02: complete, 点数=2346, 已达点平均绝对误差=48.99%
+sw2-2-plain-dt0.02: failed, 点数=2302, 已达点平均绝对误差=43.86%
+sw1-1-elastic-dt0.01: complete, 点数=4720, 已达点平均绝对误差=23.72%
+2H16-Ref-original: complete, 点数=293, 已达点平均绝对误差=98.80%
+2H16-Ref-elastic: complete, 点数=293, 已达点平均绝对误差=98.80%
+2H16-Ref-plain: failed, 点数=45, 已达点平均绝对误差=222.04%
+
+三种模式共同达到的实验位移点比较（仍按上述骨架/单调点规则，非循环配准）：
+sw1-1: 共同位移点数=6
+  sw1-1-original-dt0.02: 平均绝对误差=30.04%
+  sw1-1-elastic-dt0.02: 平均绝对误差=17.76%
+  sw1-1-plain-dt0.02: 平均绝对误差=4.40%
+sw1-3: 共同位移点数=1
+  sw1-3-original-dt0.02: 平均绝对误差=5.90%
+  sw1-3-elastic-dt0.02: 平均绝对误差=3.43%
+  sw1-3-plain-dt0.02: 平均绝对误差=26.11%
+sw2-2: 共同位移点数=3
+  sw2-2-original-dt0.02: 平均绝对误差=123.90%
+  sw2-2-elastic-dt0.02: 平均绝对误差=48.99%
+  sw2-2-plain-dt0.02: 平均绝对误差=43.86%
+2H16-Ref: 共同位移点数=4
+  2H16-Ref-original: 平均绝对误差=184.28%
+  2H16-Ref-elastic: 平均绝对误差=184.28%
+  2H16-Ref-plain: 平均绝对误差=222.04%
+
+步长减半（sw1-1 elastic，0.02对0.01）：同一物理加载时刻反力最大差
+102.31 kN，即细步长峰值的54.92%，
+全路径RMS/峰值=13.38%。控制位移最大不一致
+1.94e-11 mm。说明差异不是加载协议错位。
+仅取峰值/骨架点可能掩盖卸载路径差异，不能称为步长收敛。
+step_sensitivity.json还列出首个超过求解力容差的反力差及三个已记录位置
+首个超过3000Pa的应力差。只有这三个位置的记录，不是全域首个历史事件，
+也未把应力差直接认定为裂缝/压碎的因果证据。
+2H16-Ref初始阶段模拟力约为实验3倍，裂后仍显著超估；成因未独立确认，
+不能直接断言“只能是试验装置或E”。支承接触、测点、混凝土参数、材料/迭代问题均待核实。
+
+GF100 + elastic的sw1-1构件诊断：status=failed，t=2.440000，
+message=internal wall-clock limit reached。早期反复触发2D子步10000上限；时间限301秒退出，
+不把提高安全上限当作稳定性修复。Gf=100 N/m、Lch=0.2m均为假定研究输入，非测量值。
+这次诊断使用修改前协议，但失败发生在末端以前，不涉及该末端问题。
+不得与原模式结果混在一起，也不代表实验精度验证。
+
+五、未合格项与下一步顺序
+1. iterative原位更新的构件步长/迭代路径敏感性明显。先定位同一加载时刻首个
+   材料点历史分歧，记录提交前后、迭代过冲、裂缝/压碎事件；使用同一力平衡门槛。
+   修改不能破坏OpenSees回滚/查询纯度，也不能靠放宽容差使试验通过。
+2. 3D侧向自由单轴：原模式88/320步，t=22停止；显式algorithmic/committed 320/320。
+   不把已有选项可完成的结果当作默认算法全局稳定。三维柱和实验尚需独立验算。
+3. 3D的8组原文分歧及12组包络范围外路径，逐条分类说明；继续排查
+   三裂缝关闭/重新排列，并补充原始变形梯度与各物理面状态的独立参考。
+4. 墙sw1-3原模式失败，sw2-2原模式方向/幅值错误；elastic模式仍有40-49%级骨架误差。
+   核实约束区压缩参数、破坏局部化、配筋、轴压、实验坐标与加载协议；不能盲调参数。
+5. 从单轴能量扩大到多轴/混合模式前，需要明确每物理面的功与投影带宽。
+   Gf资料缺失不能用“某个假定值拟合较好”替代测量。
+6. 其他实验仍按既有inventory列缺项；本轮没有凭空补齐剩余试验模型。
+
+六、复现（均选新的输出目录，避免覆盖旧失败证据）
+Python：C:/Users/Administrator/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe
+PATH加入C:/msys64/mingw64/bin。以下命令从C:/Work/OpenSees执行。
+cmake --build bm --target OpenSees -j4
+python tests/adinaConcreteReview/difftest/difftest.py --kernel SRC/material/nD --out tmp/new-diff2d
+python tests/adinaConcreteReview/difftest/difftest3d.py --out tmp/new-diff3d
+python tests/adinaConcreteAudit/run_audit.py --output tmp/new-audit
+python tests/adinaConcreteReview/restart/verify_restart.py --opensees bm/OpenSees.exe --out tmp/new-restart
+python tests/adinaConcreteAudit/run_fracture_tests.py --output tmp/new-fracture --opensees bm/OpenSees.exe --default-evidence tmp/new-audit
+python tests/adinaConcrete2DWalls/build_baseline.py --output tmp/new-pair
+python tests/adinaConcreteReview/continue_cases.py --bin tmp/new-pair --out tmp/new-cases --jobs 3 --timeout 900
+编译/链接与引擎库写入不能同时进行。每个Tcl检查还必须核对PASS/步数/状态，不只看进程退出码。
+如修改了生产源，旧冻结证据不能改名充作新测试；独立复查work也不能重新覆盖生产改进。

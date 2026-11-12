@@ -1,0 +1,1730 @@
+{
+  "date": "2026-10-06",
+  "evidence": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006",
+  "production_executable_sha256": "56eee50f136fd285b46cb8a9e56c124799d0083ea21e3b3976fcf97ec573bd3f",
+  "source_sha256": {
+    "C:\\Work\\OpenSees\\SRC\\material\\nD\\AdinaConcrete2D.cpp": "2ba6745cfb4b65b317ba50b855dc10bfa9a71d12b8cb7e16089cf7be6c964f84",
+    "C:\\Work\\OpenSees\\SRC\\material\\nD\\AdinaConcrete2D.h": "8892d0e94ac6ea0b4043f46f6ad6c7f870e457b210c154184d68eadb7872c9ab",
+    "C:\\Work\\OpenSees\\SRC\\material\\nD\\AdinaConcrete2DFactory.cpp": "46867e306614bf0669d08825d2c912afd726acf2184c0c63005555ceab1cc994",
+    "C:\\Work\\OpenSees\\SRC\\material\\nD\\AdinaConcrete3D.cpp": "3ec70d71aeebf64e07f4c974a554ecef43fa152c69568f07c129155f2b0879a7",
+    "C:\\Work\\OpenSees\\SRC\\material\\nD\\AdinaConcrete3D.h": "b44c4bf0aef25892a5254b64780ef259f3156fb2acc3dbaf45021b5feaf97caa",
+    "C:\\Work\\OpenSees\\SRC\\material\\nD\\AdinaConcrete3DFactory.cpp": "b9478d7b40dacf299814026fa4088afded218dd658c1e2d919f4faccd2e7df42",
+    "C:\\Work\\OpenSees\\SRC\\material\\nD\\AdinaConcreteOptions.h": "03d354e7aa55dfd8320367fd679d8d99e9d266d966ba9ede764c39b753a3ab1d",
+    "C:\\Work\\OpenSees\\SRC\\material\\nD\\adinaConcrete2D\\Concrete2D.cpp": "82db08dc3c9edfc075ff3c8f0fc13f44d68af0ce4bd7acdbd24753ec3a67d9bc",
+    "C:\\Work\\OpenSees\\SRC\\material\\nD\\adinaConcrete2D\\Concrete2D.h": "0e8111bec6dca377b4b5987e68d8a8f7407e5e3cd4cd3c333011432d4a71a2fe",
+    "C:\\Work\\OpenSees\\SRC\\material\\nD\\adinaConcrete3D\\BranchTangent.h": "0b64dd7ac5e57bfbc2bb77f5aa693d83936ac4db8b965ca83fe4f0f3378df0a1",
+    "C:\\Work\\OpenSees\\SRC\\material\\nD\\adinaConcrete3D\\Concrete3D.cpp": "58eccd468069f504e64880906796bffa31cff795f0649a204b69d9ade20c038a",
+    "C:\\Work\\OpenSees\\SRC\\material\\nD\\adinaConcrete3D\\Concrete3D.h": "ab666ec1196bb9880f311a7cd1b36dd01edcaa90dcc8bf8ac295ec941493d46d",
+    "C:\\Work\\OpenSees\\SRC\\material\\nD\\adinaConcrete3D\\TensionSoftening.h": "d55043365c25bf49e56bc774474d199382a17727440f71e4fd9b588ac72c8d8c",
+    "C:\\Work\\OpenSees\\SRC\\material\\nD\\CMakeLists.txt": "07e291f3c9c39469f3624b026484146114718c59dd6d8d803fa8aa1392c590a2",
+    "C:\\Work\\OpenSees\\SRC\\material\\section\\LayeredShellFiberSection.cpp": "b600f7e4fa5de92d635224b90f16da3598742bd37f2d3abc3092c4c6abc9c6b6",
+    "C:\\Work\\OpenSees\\SRC\\material\\section\\LayeredShellFiberSection.h": "24223d7eaebf8f1b23e7e50c7a77d067973c88f8889160aaea690d2644b57f1f",
+    "C:\\Work\\OpenSees\\tests\\adinaConcreteReview\\build_development_report.py": "bec5409ac10684906fa40786ccd1a0328e872c8d2313f29416a948d7a780130b",
+    "C:\\Work\\OpenSees\\tests\\adinaConcreteReview\\continue_cases.py": "7188d9f8c6daed4d4d74114004988e3c3da212d0d99b7a6b6c4904da2d3d1b84",
+    "C:\\Work\\OpenSees\\tests\\adinaConcreteReview\\restart\\verify_restart.py": "2dc3c802c900fa58a515f568f08d70b2eaec231cafd6b943f5b5a1b10ea9def4",
+    "C:\\Work\\OpenSees\\tests\\adinaConcreteReview\\difftest\\difftest3d.py": "0d6cad92aa860c554437d67c96e5fed5a22fd16c893dd2ba98f707120e214990",
+    "C:\\Work\\OpenSees\\tests\\adinaConcreteReview\\difftest\\native3d_driver.cpp": "e5e59362d0072c07d4f676333a753b0d9c851b9a9f4ee1a67b71efac28f16685",
+    "C:\\Work\\OpenSees\\tests\\adinaConcreteReview\\wall_driver_adina.tcl": "ac627b27475070bbdb7f357498a0df61e68db41dd3362db8fa261faf0d06b502",
+    "C:\\Work\\OpenSees\\tests\\adinaConcreteReview\\launch_wall.py": "9b77596e2fcb8b43b09443cec8a25084d0e01bdc1487e01c7b0ef6d8777034a3",
+    "C:\\Work\\OpenSees\\tests\\adinaConcrete3D\\kernel_tests.cpp": "475a576c1777f3d1f9bb1fe6aa5917c5c43d453b35f6ca530b42f3aba31a39d2",
+    "C:\\Work\\OpenSees\\tests\\adinaConcrete3D\\adapter_tests.cpp": "28f601caf6965aeb9e32bbe7fdade2f1b7fe330f57a4919ed4fb62a1f8f011c7",
+    "C:\\Work\\OpenSees\\tests\\adinaConcrete2D\\kernel_tests.cpp": "c14968d82915b5af1cd29df382b05369fd3ab52b6f2dde0e28084fbd66ea20dc",
+    "C:\\Work\\OpenSees\\tests\\adinaConcrete2D\\adapter_tests.cpp": "5241e17d42583ab194081ecbb049deaf99bc2a404da36be7dfad202f22e36c49",
+    "C:\\Work\\OpenSees\\tests\\adinaConcreteReview\\brick3d\\brick_test.tcl": "7902dc2f499ad5132eb8d60a70f7b4c16e99305cbedbd0b9209538a703644141"
+  },
+  "documentation_changes_after_verification": [],
+  "original_fortran_unchanged": true,
+  "subroutine_records": 7877,
+  "subroutine_failures": 0,
+  "fracture": {
+    "timestamp_utc": "2026-10-06T02:10:42.117569+00:00",
+    "commands": [
+      [
+        "C:/msys64/mingw64/bin/g++.exe",
+        "-std=c++17",
+        "-O2",
+        "-Wall",
+        "-Wextra",
+        "-pedantic",
+        "C:\\Work\\OpenSees\\tests\\adinaConcreteAudit\\fracture_tests.cpp",
+        "C:\\Work\\OpenSees\\SRC\\material\\nD\\adinaConcrete2D\\Concrete2D.cpp",
+        "C:\\Work\\OpenSees\\SRC\\material\\nD\\adinaConcrete3D\\Concrete3D.cpp",
+        "-o",
+        "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\fracture-v7\\fracture_tests.exe"
+      ],
+      [
+        "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\fracture-v7\\fracture_tests.exe"
+      ],
+      [
+        "C:\\Work\\OpenSees\\bm\\OpenSees.exe",
+        "C:\\Work\\OpenSees\\tests\\adinaConcreteAudit\\fracture_shell.tcl",
+        "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\fracture-v7\\shell"
+      ]
+    ],
+    "default_evidence": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\subroutines-v6",
+    "default_audit_records": 7877,
+    "kernel_checks": 62736,
+    "shell_checks": 69252,
+    "shell_variants": [
+      {
+        "mesh": "1",
+        "wrapped": "0",
+        "work_J": "0.20000000000000004",
+        "expected_J": "0.2",
+        "relative_error": "1.3877787807814457e-16",
+        "max_force_error_N": "2.7284841053187847e-12",
+        "refinements": "0"
+      },
+      {
+        "mesh": "1",
+        "wrapped": "1",
+        "work_J": "0.20000000000000004",
+        "expected_J": "0.2",
+        "relative_error": "1.3877787807814457e-16",
+        "max_force_error_N": "2.7284841053187847e-12",
+        "refinements": "0"
+      },
+      {
+        "mesh": "2",
+        "wrapped": "0",
+        "work_J": "0.20000000000000565",
+        "expected_J": "0.2",
+        "relative_error": "2.8171909249863347e-14",
+        "max_force_error_N": "6.244590622372925e-9",
+        "refinements": "2"
+      },
+      {
+        "mesh": "2",
+        "wrapped": "1",
+        "work_J": "0.20000000000000565",
+        "expected_J": "0.2",
+        "relative_error": "2.8171909249863347e-14",
+        "max_force_error_N": "6.244590622372925e-9",
+        "refinements": "2"
+      },
+      {
+        "mesh": "4",
+        "wrapped": "0",
+        "work_J": "0.20000000000001275",
+        "expected_J": "0.2",
+        "relative_error": "6.369904603786836e-14",
+        "max_force_error_N": "3.9294718590099365e-9",
+        "refinements": "5"
+      },
+      {
+        "mesh": "4",
+        "wrapped": "1",
+        "work_J": "0.20000000000001275",
+        "expected_J": "0.2",
+        "relative_error": "6.369904603786836e-14",
+        "max_force_error_N": "3.9294718590099365e-9",
+        "refinements": "5"
+      },
+      {
+        "mesh": "8",
+        "wrapped": "0",
+        "work_J": "0.2000000000000004",
+        "expected_J": "0.2",
+        "relative_error": "1.942890293094024e-15",
+        "max_force_error_N": "2.36835694523e-9",
+        "refinements": "14"
+      },
+      {
+        "mesh": "8",
+        "wrapped": "1",
+        "work_J": "0.2000000000000004",
+        "expected_J": "0.2",
+        "relative_error": "1.942890293094024e-15",
+        "max_force_error_N": "2.36835694523e-9",
+        "refinements": "14"
+      }
+    ],
+    "passed": true,
+    "experimental_accuracy_validated": false,
+    "production_exe": "C:\\Work\\OpenSees\\bm\\OpenSees.exe",
+    "production_exe_sha256": "56eee50f136fd285b46cb8a9e56c124799d0083ea21e3b3976fcf97ec573bd3f",
+    "kernel_exe_sha256": "4797e1a69ad41eb67d16fd0e36d43a8a870e57c28acaf93e73b471f5a8c107a3",
+    "source_sha256": {
+      "C:\\Work\\OpenSees\\tests\\adinaConcreteAudit\\fracture_tests.cpp": "e1bb3ea04b61754e5ffc785407d2ee2d9a10ce7086fc3c4b3af1bbf0060e8a68",
+      "C:\\Work\\OpenSees\\tests\\adinaConcreteAudit\\fracture_shell.tcl": "98cc5500104ec02a8c1d717111e25cfb9f530691c975c666de7f36a80adee2e0",
+      "C:\\Work\\OpenSees\\tests\\adinaConcreteAudit\\run_fracture_tests.py": "0c38d64486377043702f881e63b11672c2bbd4578f9b028d2c8a993fe9dcceb0",
+      "C:\\Work\\OpenSees\\tests\\adinaConcreteAudit\\fracture_cases.py": "82d3fe68a605056ad3097ed1f1233314a2c22e5184fd2594bbbca060d008349e",
+      "C:\\Work\\OpenSees\\tests\\adinaConcreteAudit\\FRACTURE_ENERGY.md": "3d20cf99dcf3d122d5a4694527f53bce43f8a54d3858e6be8c6bc087552c916e",
+      "C:\\Work\\OpenSees\\SRC\\material\\nD\\adinaConcrete2D\\Concrete2D.cpp": "82db08dc3c9edfc075ff3c8f0fc13f44d68af0ce4bd7acdbd24753ec3a67d9bc",
+      "C:\\Work\\OpenSees\\SRC\\material\\nD\\adinaConcrete2D\\Concrete2D.h": "0e8111bec6dca377b4b5987e68d8a8f7407e5e3cd4cd3c333011432d4a71a2fe",
+      "C:\\Work\\OpenSees\\SRC\\material\\nD\\adinaConcrete3D\\BranchTangent.h": "0b64dd7ac5e57bfbc2bb77f5aa693d83936ac4db8b965ca83fe4f0f3378df0a1",
+      "C:\\Work\\OpenSees\\SRC\\material\\nD\\adinaConcrete3D\\Concrete3D.cpp": "58eccd468069f504e64880906796bffa31cff795f0649a204b69d9ade20c038a",
+      "C:\\Work\\OpenSees\\SRC\\material\\nD\\adinaConcrete3D\\Concrete3D.h": "ab666ec1196bb9880f311a7cd1b36dd01edcaa90dcc8bf8ac295ec941493d46d",
+      "C:\\Work\\OpenSees\\SRC\\material\\nD\\adinaConcrete3D\\TensionSoftening.h": "d55043365c25bf49e56bc774474d199382a17727440f71e4fd9b588ac72c8d8c",
+      "C:\\Work\\OpenSees\\SRC\\material\\nD\\AdinaConcrete2D.cpp": "2ba6745cfb4b65b317ba50b855dc10bfa9a71d12b8cb7e16089cf7be6c964f84",
+      "C:\\Work\\OpenSees\\SRC\\material\\nD\\AdinaConcrete2D.h": "8892d0e94ac6ea0b4043f46f6ad6c7f870e457b210c154184d68eadb7872c9ab",
+      "C:\\Work\\OpenSees\\SRC\\material\\nD\\AdinaConcrete2DFactory.cpp": "46867e306614bf0669d08825d2c912afd726acf2184c0c63005555ceab1cc994",
+      "C:\\Work\\OpenSees\\SRC\\material\\nD\\AdinaConcrete3D.cpp": "3ec70d71aeebf64e07f4c974a554ecef43fa152c69568f07c129155f2b0879a7",
+      "C:\\Work\\OpenSees\\SRC\\material\\nD\\AdinaConcrete3D.h": "b44c4bf0aef25892a5254b64780ef259f3156fb2acc3dbaf45021b5feaf97caa",
+      "C:\\Work\\OpenSees\\SRC\\material\\nD\\AdinaConcrete3DFactory.cpp": "b9478d7b40dacf299814026fa4088afded218dd658c1e2d919f4faccd2e7df42",
+      "C:\\Work\\OpenSees\\SRC\\material\\nD\\AdinaConcreteOptions.h": "03d354e7aa55dfd8320367fd679d8d99e9d266d966ba9ede764c39b753a3ab1d",
+      "C:\\Work\\OpenSees\\SRC\\material\\section\\LayeredShellFiberSection.cpp": "b600f7e4fa5de92d635224b90f16da3598742bd37f2d3abc3092c4c6abc9c6b6",
+      "C:\\Work\\OpenSees\\SRC\\element\\shell\\ShellMITC4.cpp": "1f16d65e8728923babed41c8f7bf4998cfeb48ab4fa3c2f69486332a3da926b4",
+      "C:\\Work\\OpenSees\\SRC\\material\\nD\\PlateFromPlaneStressMaterial.cpp": "314ad0b1d68bea675e58225eb81e5256390dccf7d0e53dc5c80e2fd4f6b43a83"
+    }
+  },
+  "restart": {
+    "executable": "C:\\Work\\OpenSees\\bm\\OpenSees.exe",
+    "executable_sha256": "56eee50f136fd285b46cb8a9e56c124799d0083ea21e3b3976fcf97ec573bd3f",
+    "results": [
+      {
+        "name": "original",
+        "options": [],
+        "steps": 41,
+        "max_absolute_difference": 0.0,
+        "max_scaled_difference": 0.0,
+        "passed": true
+      },
+      {
+        "name": "elastic_unloading",
+        "options": [
+          "-crushedUnloading",
+          "elastic"
+        ],
+        "steps": 41,
+        "max_absolute_difference": 0.0,
+        "max_scaled_difference": 0.0,
+        "passed": true
+      },
+      {
+        "name": "legacy_replay",
+        "options": [
+          "-tangent",
+          "algorithmic",
+          "-update",
+          "committed"
+        ],
+        "steps": 41,
+        "max_absolute_difference": 1.862645149230957e-09,
+        "max_scaled_difference": 2.8691834300000003e-12,
+        "passed": true
+      },
+      {
+        "name": "fracture_iterative",
+        "options": [
+          "-fractureEnergy",
+          "200",
+          "0.1",
+          "-tangent",
+          "secant",
+          "-update",
+          "iterative"
+        ],
+        "steps": 41,
+        "max_absolute_difference": 0.0,
+        "max_scaled_difference": 0.0,
+        "passed": true
+      },
+      {
+        "name": "fracture_elastic",
+        "options": [
+          "-fractureEnergy",
+          "200",
+          "0.1",
+          "-crushedUnloading",
+          "elastic"
+        ],
+        "steps": 41,
+        "max_absolute_difference": 9.313225746154785e-10,
+        "max_scaled_difference": 1.4345917100000001e-12,
+        "passed": true
+      },
+      {
+        "name": "fracture_replay",
+        "options": [
+          "-fractureEnergy",
+          "200",
+          "0.1",
+          "-tangent",
+          "algorithmic",
+          "-update",
+          "committed"
+        ],
+        "steps": 41,
+        "max_absolute_difference": 9.313225746154785e-10,
+        "max_scaled_difference": 1.4345917100000001e-12,
+        "passed": true
+      }
+    ],
+    "sources": {
+      "C:\\Work\\OpenSees\\tests\\adinaConcreteReview\\restart\\verify_restart.py": "2dc3c802c900fa58a515f568f08d70b2eaec231cafd6b943f5b5a1b10ea9def4",
+      "C:\\Work\\OpenSees\\tests\\adinaConcreteReview\\restart\\restart_test.tcl": "5f64eff01d24cce36ac22f7e05895cfb1d654f8da24fe173f9b7b219886c7743",
+      "C:\\Work\\OpenSees\\tests\\adinaConcreteReview\\restart\\dump.tcl": "df5915346a84a807e053a5e941f7d7fcfb3224164c96d01505f1ec49eb9cf367"
+    },
+    "passed": true
+  },
+  "difftest2d": {
+    "groups": 88,
+    "steps": 130544
+  },
+  "difftest3d": {
+    "groups": 36,
+    "raw_match_groups": 16,
+    "truncated_envelope_groups": 12
+  },
+  "cases": [
+    {
+      "case": "sw1-1",
+      "material": "original",
+      "step": 0.02,
+      "name": "sw1-1-original-dt0.02",
+      "executable": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\paired-v6\\OpenSees-ADINA2D.exe",
+      "exe_sha256": "56eee50f136fd285b46cb8a9e56c124799d0083ea21e3b3976fcf97ec573bd3f",
+      "input_sha256": {
+        "config.tcl": "0cced3f2da54b2a4a899f56b130cc7282915052abe7001f71a5bf07855085af4",
+        "element.tcl": "593e60c1339ef8692ceaf88a7162b3260fd89089fcb9191b3f413bfff3e3bee9",
+        "model.tcl": "767f34127755d13307ecc889f5817b337deb468060f5025708db280306c20211",
+        "node.tcl": "43212968dff839c558dfec7d76cd97dd6fd4eee8267a113a2da14a8097fa082b",
+        "shuju2.txt": "804907538bebe1d9bb095040f59a655043cfc9a0977cdba7bbad3628fe08c9d3",
+        "wall_driver.tcl": "a0c9f5a0ec3015d71c075992810226032589721e11e834dcb1998a813df9a3e9"
+      },
+      "parameters_fitted": false,
+      "assumptions_unchanged_from_review": true,
+      "exit_code": 0,
+      "elapsed_s": "49",
+      "status": "complete",
+      "phase": "lateral",
+      "time": "47.200000",
+      "accepted": "2370",
+      "attempts": "2371",
+      "failures": "1",
+      "post_commit_bad_steps": "0",
+      "max_post_commit_norm_N": 25.818708462517808,
+      "max_global_x_imbalance_N": "29.672616970929084",
+      "max_global_y_imbalance_N": "45.03387591300998",
+      "message": "full path completed; post-commit residual audit determines validation eligibility",
+      "force_tolerance_N": 25.875,
+      "equilibrium_gate_bad_steps": 0,
+      "post_commit_steps_over_solver_tolerance": 0,
+      "complete_with_historical_equilibrium_gate": true,
+      "repository_commit": "bee596a3ab33e8e41b3ae85328ea71357542bb74",
+      "experimental_id": "shear_walls/sw1-1",
+      "experimental_sha256": "23b3afc2d810e79615b9f805e8866d2f27563b73dc38918c75b72baba71fdb3a",
+      "experimental_points": 7,
+      "measurement": {
+        "displacement": "wall_top_displacement",
+        "force": "wall_base_shear"
+      },
+      "comparison_points": [
+        {
+          "displacement_mm": -21.55,
+          "experiment_kN": -168.63,
+          "simulation_kN": -80.26113704459846,
+          "error_pct": 52.40399866892104
+        },
+        {
+          "displacement_mm": -13.99,
+          "experiment_kN": -195.87,
+          "simulation_kN": -154.43220007948904,
+          "error_pct": 21.15576653929186
+        },
+        {
+          "displacement_mm": -5.79,
+          "experiment_kN": -160.71,
+          "simulation_kN": -136.03690547317592,
+          "error_pct": 15.352557107102289
+        },
+        {
+          "displacement_mm": 7.17,
+          "experiment_kN": 160.35,
+          "simulation_kN": 126.28088081527876,
+          "error_pct": -21.246722285451344
+        },
+        {
+          "displacement_mm": 14.86,
+          "experiment_kN": 188.84,
+          "simulation_kN": 139.2487833699171,
+          "error_pct": -26.260970467105963
+        },
+        {
+          "displacement_mm": 20.11,
+          "experiment_kN": 188.64,
+          "simulation_kN": 106.0313973194405,
+          "error_pct": -43.79166808765876
+        }
+      ],
+      "comparison_method": "same-sign force envelope within [0.95,1.02] experimental displacement; not cycle identification",
+      "conditional_reached_point_mean_absolute_error_pct": 30.035280525921877,
+      "curve_rows": 2360,
+      "experimental_accuracy_validated": false
+    },
+    {
+      "case": "sw1-1",
+      "material": "elastic",
+      "step": 0.02,
+      "name": "sw1-1-elastic-dt0.02",
+      "executable": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\paired-v6\\OpenSees-ADINA2D.exe",
+      "exe_sha256": "56eee50f136fd285b46cb8a9e56c124799d0083ea21e3b3976fcf97ec573bd3f",
+      "input_sha256": {
+        "config.tcl": "0cced3f2da54b2a4a899f56b130cc7282915052abe7001f71a5bf07855085af4",
+        "element.tcl": "593e60c1339ef8692ceaf88a7162b3260fd89089fcb9191b3f413bfff3e3bee9",
+        "model.tcl": "8f8014360e248f180d0e7c4e57f80ae6514a491e6ef13589dd84617e888788e4",
+        "node.tcl": "43212968dff839c558dfec7d76cd97dd6fd4eee8267a113a2da14a8097fa082b",
+        "shuju2.txt": "804907538bebe1d9bb095040f59a655043cfc9a0977cdba7bbad3628fe08c9d3",
+        "wall_driver.tcl": "a0c9f5a0ec3015d71c075992810226032589721e11e834dcb1998a813df9a3e9"
+      },
+      "parameters_fitted": false,
+      "assumptions_unchanged_from_review": true,
+      "exit_code": 0,
+      "elapsed_s": "129",
+      "status": "complete",
+      "phase": "lateral",
+      "time": "47.200000",
+      "accepted": "2370",
+      "attempts": "2373",
+      "failures": "3",
+      "post_commit_bad_steps": "0",
+      "max_post_commit_norm_N": 25.870841977412734,
+      "max_global_x_imbalance_N": "41.22549159011396",
+      "max_global_y_imbalance_N": "36.217058382811956",
+      "message": "full path completed; post-commit residual audit determines validation eligibility",
+      "force_tolerance_N": 25.875,
+      "equilibrium_gate_bad_steps": 0,
+      "post_commit_steps_over_solver_tolerance": 0,
+      "complete_with_historical_equilibrium_gate": true,
+      "repository_commit": "bee596a3ab33e8e41b3ae85328ea71357542bb74",
+      "experimental_id": "shear_walls/sw1-1",
+      "experimental_sha256": "23b3afc2d810e79615b9f805e8866d2f27563b73dc38918c75b72baba71fdb3a",
+      "experimental_points": 7,
+      "measurement": {
+        "displacement": "wall_top_displacement",
+        "force": "wall_base_shear"
+      },
+      "comparison_points": [
+        {
+          "displacement_mm": -21.55,
+          "experiment_kN": -168.63,
+          "simulation_kN": -112.03537342838534,
+          "error_pct": 33.56142238724702
+        },
+        {
+          "displacement_mm": -13.99,
+          "experiment_kN": -195.87,
+          "simulation_kN": -178.31279508348294,
+          "error_pct": 8.963702923631525
+        },
+        {
+          "displacement_mm": -5.79,
+          "experiment_kN": -160.71,
+          "simulation_kN": -143.4930647193508,
+          "error_pct": 10.7130454113927
+        },
+        {
+          "displacement_mm": 7.17,
+          "experiment_kN": 160.35,
+          "simulation_kN": 167.3833188153169,
+          "error_pct": 4.386229382798193
+        },
+        {
+          "displacement_mm": 14.86,
+          "experiment_kN": 188.84,
+          "simulation_kN": 173.66447848464267,
+          "error_pct": -8.036179578138812
+        },
+        {
+          "displacement_mm": 20.11,
+          "experiment_kN": 188.64,
+          "simulation_kN": 111.50913591365297,
+          "error_pct": -40.887862641193294
+        }
+      ],
+      "comparison_method": "same-sign force envelope within [0.95,1.02] experimental displacement; not cycle identification",
+      "conditional_reached_point_mean_absolute_error_pct": 17.758073720733588,
+      "curve_rows": 2360,
+      "experimental_accuracy_validated": false
+    },
+    {
+      "case": "sw1-1",
+      "material": "plain",
+      "step": 0.02,
+      "name": "sw1-1-plain-dt0.02",
+      "executable": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\paired-v6\\OpenSees-PlainConcrete.exe",
+      "exe_sha256": "5b44b7ba13d8448fb1509b213ccdf2e4f9ce82c826d0a776f734f3276e23d4f2",
+      "input_sha256": {
+        "config.tcl": "0cced3f2da54b2a4a899f56b130cc7282915052abe7001f71a5bf07855085af4",
+        "element.tcl": "593e60c1339ef8692ceaf88a7162b3260fd89089fcb9191b3f413bfff3e3bee9",
+        "model.tcl": "e232cf9966f2559ef372058e8dc042a8acc18538b74195db708dda96c8823c09",
+        "node.tcl": "43212968dff839c558dfec7d76cd97dd6fd4eee8267a113a2da14a8097fa082b",
+        "shuju2.txt": "804907538bebe1d9bb095040f59a655043cfc9a0977cdba7bbad3628fe08c9d3",
+        "wall_driver.tcl": "a0c9f5a0ec3015d71c075992810226032589721e11e834dcb1998a813df9a3e9"
+      },
+      "parameters_fitted": false,
+      "assumptions_unchanged_from_review": true,
+      "exit_code": 1,
+      "elapsed_s": "161",
+      "status": "failed",
+      "phase": "lateral",
+      "time": "45.088224",
+      "accepted": "2279",
+      "attempts": "2392",
+      "failures": "113",
+      "post_commit_bad_steps": "0",
+      "max_post_commit_norm_N": 25.874975749052744,
+      "max_global_x_imbalance_N": "19.987623505294323",
+      "max_global_y_imbalance_N": "43.02127199989627",
+      "message": "strict analysis stalled at minimum increment 2e-5",
+      "force_tolerance_N": 25.875,
+      "equilibrium_gate_bad_steps": 0,
+      "post_commit_steps_over_solver_tolerance": 0,
+      "complete_with_historical_equilibrium_gate": false,
+      "repository_commit": "bee596a3ab33e8e41b3ae85328ea71357542bb74",
+      "experimental_id": "shear_walls/sw1-1",
+      "experimental_sha256": "23b3afc2d810e79615b9f805e8866d2f27563b73dc38918c75b72baba71fdb3a",
+      "experimental_points": 7,
+      "measurement": {
+        "displacement": "wall_top_displacement",
+        "force": "wall_base_shear"
+      },
+      "comparison_points": [
+        {
+          "displacement_mm": -21.55,
+          "experiment_kN": -168.63,
+          "simulation_kN": -170.15997631151032,
+          "error_pct": -0.9072978186030509
+        },
+        {
+          "displacement_mm": -13.99,
+          "experiment_kN": -195.87,
+          "simulation_kN": -186.3244196652561,
+          "error_pct": 4.8734264230070465
+        },
+        {
+          "displacement_mm": -5.79,
+          "experiment_kN": -160.71,
+          "simulation_kN": -150.1934485821792,
+          "error_pct": 6.543806494817252
+        },
+        {
+          "displacement_mm": 7.17,
+          "experiment_kN": 160.35,
+          "simulation_kN": 154.42594252704998,
+          "error_pct": -3.694454301808551
+        },
+        {
+          "displacement_mm": 14.86,
+          "experiment_kN": 188.84,
+          "simulation_kN": 188.17127781340648,
+          "error_pct": -0.35412104776187625
+        },
+        {
+          "displacement_mm": 20.11,
+          "experiment_kN": 188.64,
+          "simulation_kN": 169.67640984549223,
+          "error_pct": -10.052793762991813
+        }
+      ],
+      "comparison_method": "same-sign force envelope within [0.95,1.02] experimental displacement; not cycle identification",
+      "conditional_reached_point_mean_absolute_error_pct": 4.404316641498265,
+      "curve_rows": 2269,
+      "experimental_accuracy_validated": false
+    },
+    {
+      "case": "sw1-3",
+      "material": "original",
+      "step": 0.02,
+      "name": "sw1-3-original-dt0.02",
+      "executable": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\paired-v6\\OpenSees-ADINA2D.exe",
+      "exe_sha256": "56eee50f136fd285b46cb8a9e56c124799d0083ea21e3b3976fcf97ec573bd3f",
+      "input_sha256": {
+        "config.tcl": "fe24a4162b9694fe1610179690e49cf50c7a1879c102a2b118e00c714a3a0769",
+        "element.tcl": "593e60c1339ef8692ceaf88a7162b3260fd89089fcb9191b3f413bfff3e3bee9",
+        "model.tcl": "767f34127755d13307ecc889f5817b337deb468060f5025708db280306c20211",
+        "node.tcl": "43212968dff839c558dfec7d76cd97dd6fd4eee8267a113a2da14a8097fa082b",
+        "shuju2.txt": "804907538bebe1d9bb095040f59a655043cfc9a0977cdba7bbad3628fe08c9d3",
+        "wall_driver.tcl": "a0c9f5a0ec3015d71c075992810226032589721e11e834dcb1998a813df9a3e9"
+      },
+      "parameters_fitted": false,
+      "assumptions_unchanged_from_review": true,
+      "exit_code": 1,
+      "elapsed_s": "106",
+      "status": "failed",
+      "phase": "lateral",
+      "time": "3.373009",
+      "accepted": "221",
+      "attempts": "442",
+      "failures": "221",
+      "post_commit_bad_steps": "0",
+      "max_post_commit_norm_N": 76.71013517838796,
+      "max_global_x_imbalance_N": "86.13876509768306",
+      "max_global_y_imbalance_N": "29.564519128296524",
+      "message": "strict analysis stalled at minimum increment 2e-5",
+      "force_tolerance_N": 77.60000000000001,
+      "equilibrium_gate_bad_steps": 0,
+      "post_commit_steps_over_solver_tolerance": 0,
+      "complete_with_historical_equilibrium_gate": false,
+      "repository_commit": "bee596a3ab33e8e41b3ae85328ea71357542bb74",
+      "experimental_id": "shear_walls/sw1-3",
+      "experimental_sha256": "89ad1491357f88c9c4b605ed44fe7c77410c878abda848cf86406f761a14c2d7",
+      "experimental_points": 7,
+      "measurement": {
+        "displacement": "wall_top_displacement",
+        "force": "wall_base_shear"
+      },
+      "comparison_points": [
+        {
+          "displacement_mm": 5.76,
+          "experiment_kN": 165.19,
+          "simulation_kN": 174.94014858933355,
+          "error_pct": 5.902384278305919
+        }
+      ],
+      "comparison_method": "same-sign force envelope within [0.95,1.02] experimental displacement; not cycle identification",
+      "conditional_reached_point_mean_absolute_error_pct": 5.902384278305919,
+      "curve_rows": 211,
+      "experimental_accuracy_validated": false
+    },
+    {
+      "case": "sw1-3",
+      "material": "elastic",
+      "step": 0.02,
+      "name": "sw1-3-elastic-dt0.02",
+      "executable": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\paired-v6\\OpenSees-ADINA2D.exe",
+      "exe_sha256": "56eee50f136fd285b46cb8a9e56c124799d0083ea21e3b3976fcf97ec573bd3f",
+      "input_sha256": {
+        "config.tcl": "fe24a4162b9694fe1610179690e49cf50c7a1879c102a2b118e00c714a3a0769",
+        "element.tcl": "593e60c1339ef8692ceaf88a7162b3260fd89089fcb9191b3f413bfff3e3bee9",
+        "model.tcl": "8f8014360e248f180d0e7c4e57f80ae6514a491e6ef13589dd84617e888788e4",
+        "node.tcl": "43212968dff839c558dfec7d76cd97dd6fd4eee8267a113a2da14a8097fa082b",
+        "shuju2.txt": "804907538bebe1d9bb095040f59a655043cfc9a0977cdba7bbad3628fe08c9d3",
+        "wall_driver.tcl": "a0c9f5a0ec3015d71c075992810226032589721e11e834dcb1998a813df9a3e9"
+      },
+      "parameters_fitted": false,
+      "assumptions_unchanged_from_review": true,
+      "exit_code": 0,
+      "elapsed_s": "55",
+      "status": "complete",
+      "phase": "lateral",
+      "time": "47.200000",
+      "accepted": "2370",
+      "attempts": "2372",
+      "failures": "2",
+      "post_commit_bad_steps": "0",
+      "max_post_commit_norm_N": 77.57092028754153,
+      "max_global_x_imbalance_N": "96.34329696592431",
+      "max_global_y_imbalance_N": "107.5573124338407",
+      "message": "full path completed; post-commit residual audit determines validation eligibility",
+      "force_tolerance_N": 77.60000000000001,
+      "equilibrium_gate_bad_steps": 0,
+      "post_commit_steps_over_solver_tolerance": 0,
+      "complete_with_historical_equilibrium_gate": true,
+      "repository_commit": "bee596a3ab33e8e41b3ae85328ea71357542bb74",
+      "experimental_id": "shear_walls/sw1-3",
+      "experimental_sha256": "89ad1491357f88c9c4b605ed44fe7c77410c878abda848cf86406f761a14c2d7",
+      "experimental_points": 7,
+      "measurement": {
+        "displacement": "wall_top_displacement",
+        "force": "wall_base_shear"
+      },
+      "comparison_points": [
+        {
+          "displacement_mm": -21.05,
+          "experiment_kN": -222.31,
+          "simulation_kN": -96.11138933573605,
+          "error_pct": 56.76695185293687
+        },
+        {
+          "displacement_mm": -13.35,
+          "experiment_kN": -244.36,
+          "simulation_kN": -84.8805080019857,
+          "error_pct": 65.26415616222553
+        },
+        {
+          "displacement_mm": -8.22,
+          "experiment_kN": -211.37,
+          "simulation_kN": -196.98318305942644,
+          "error_pct": 6.806461153698995
+        },
+        {
+          "displacement_mm": 5.76,
+          "experiment_kN": 165.19,
+          "simulation_kN": 159.52913550873993,
+          "error_pct": -3.4268808591682736
+        },
+        {
+          "displacement_mm": 15.24,
+          "experiment_kN": 221.83,
+          "simulation_kN": 87.79794265940745,
+          "error_pct": -60.42106899003406
+        },
+        {
+          "displacement_mm": 21.76,
+          "experiment_kN": 204.34,
+          "simulation_kN": 96.29933115051455,
+          "error_pct": -52.8729905302366
+        }
+      ],
+      "comparison_method": "same-sign force envelope within [0.95,1.02] experimental displacement; not cycle identification",
+      "conditional_reached_point_mean_absolute_error_pct": 40.926418258050056,
+      "curve_rows": 2360,
+      "experimental_accuracy_validated": false
+    },
+    {
+      "case": "sw1-3",
+      "material": "plain",
+      "step": 0.02,
+      "name": "sw1-3-plain-dt0.02",
+      "executable": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\paired-v6\\OpenSees-PlainConcrete.exe",
+      "exe_sha256": "5b44b7ba13d8448fb1509b213ccdf2e4f9ce82c826d0a776f734f3276e23d4f2",
+      "input_sha256": {
+        "config.tcl": "fe24a4162b9694fe1610179690e49cf50c7a1879c102a2b118e00c714a3a0769",
+        "element.tcl": "593e60c1339ef8692ceaf88a7162b3260fd89089fcb9191b3f413bfff3e3bee9",
+        "model.tcl": "e232cf9966f2559ef372058e8dc042a8acc18538b74195db708dda96c8823c09",
+        "node.tcl": "43212968dff839c558dfec7d76cd97dd6fd4eee8267a113a2da14a8097fa082b",
+        "shuju2.txt": "804907538bebe1d9bb095040f59a655043cfc9a0977cdba7bbad3628fe08c9d3",
+        "wall_driver.tcl": "a0c9f5a0ec3015d71c075992810226032589721e11e834dcb1998a813df9a3e9"
+      },
+      "parameters_fitted": false,
+      "assumptions_unchanged_from_review": true,
+      "exit_code": 1,
+      "elapsed_s": "46",
+      "status": "failed",
+      "phase": "lateral",
+      "time": "12.175257",
+      "accepted": "628",
+      "attempts": "711",
+      "failures": "83",
+      "post_commit_bad_steps": "0",
+      "max_post_commit_norm_N": 77.59073780322355,
+      "max_global_x_imbalance_N": "46.037268764775945",
+      "max_global_y_imbalance_N": "122.41673148795962",
+      "message": "strict analysis stalled at minimum increment 2e-5",
+      "force_tolerance_N": 77.60000000000001,
+      "equilibrium_gate_bad_steps": 0,
+      "post_commit_steps_over_solver_tolerance": 0,
+      "complete_with_historical_equilibrium_gate": false,
+      "repository_commit": "bee596a3ab33e8e41b3ae85328ea71357542bb74",
+      "experimental_id": "shear_walls/sw1-3",
+      "experimental_sha256": "89ad1491357f88c9c4b605ed44fe7c77410c878abda848cf86406f761a14c2d7",
+      "experimental_points": 7,
+      "measurement": {
+        "displacement": "wall_top_displacement",
+        "force": "wall_base_shear"
+      },
+      "comparison_points": [
+        {
+          "displacement_mm": -8.22,
+          "experiment_kN": -211.37,
+          "simulation_kN": -219.86637974284037,
+          "error_pct": -4.019671544136046
+        },
+        {
+          "displacement_mm": 5.76,
+          "experiment_kN": 165.19,
+          "simulation_kN": 208.31855243352328,
+          "error_pct": 26.10845234791651
+        }
+      ],
+      "comparison_method": "same-sign force envelope within [0.95,1.02] experimental displacement; not cycle identification",
+      "conditional_reached_point_mean_absolute_error_pct": 15.064061946026278,
+      "curve_rows": 618,
+      "experimental_accuracy_validated": false
+    },
+    {
+      "case": "sw2-2",
+      "material": "original",
+      "step": 0.02,
+      "name": "sw2-2-original-dt0.02",
+      "executable": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\paired-v6\\OpenSees-ADINA2D.exe",
+      "exe_sha256": "56eee50f136fd285b46cb8a9e56c124799d0083ea21e3b3976fcf97ec573bd3f",
+      "input_sha256": {
+        "config.tcl": "48e0fe2929ade96a86bef10095457409227e313fe56e65829a84daa0d64a8509",
+        "element.tcl": "df1055be14f0f41bae1889cefb6838581c85ab79fc761fa065808c1dc9edb0ee",
+        "model.tcl": "73d4072eb290aa26b8a7d41de27d3014289a0419ef1653e660d6f92eadf99319",
+        "node.tcl": "0c0193e7fd1acd45f224679aaf81a09cd1aabcfdde7384ab65c2df8653d76024",
+        "shuju2.txt": "f04ac2f488f05749567636c9b7390cc1cca2bb7e208c219512ca745220f94ea5",
+        "wall_driver.tcl": "a0c9f5a0ec3015d71c075992810226032589721e11e834dcb1998a813df9a3e9"
+      },
+      "parameters_fitted": false,
+      "assumptions_unchanged_from_review": true,
+      "exit_code": 0,
+      "elapsed_s": "17",
+      "status": "complete",
+      "phase": "lateral",
+      "time": "46.900000",
+      "accepted": "2355",
+      "attempts": "2355",
+      "failures": "0",
+      "post_commit_bad_steps": "0",
+      "max_post_commit_norm_N": 115.25021732750518,
+      "max_global_x_imbalance_N": "129.50884687884536",
+      "max_global_y_imbalance_N": "134.0586271211505",
+      "message": "full path completed; post-commit residual audit determines validation eligibility",
+      "force_tolerance_N": 115.5,
+      "equilibrium_gate_bad_steps": 0,
+      "post_commit_steps_over_solver_tolerance": 0,
+      "complete_with_historical_equilibrium_gate": true,
+      "repository_commit": "bee596a3ab33e8e41b3ae85328ea71357542bb74",
+      "experimental_id": "shear_walls/sw2-2",
+      "experimental_sha256": "fc44a62705fb68a7488c4da0ca340c240f1b901f430ad7edb3eafbfa8d5abfda",
+      "experimental_points": 6,
+      "measurement": {
+        "displacement": "wall_top_displacement",
+        "force": "wall_base_shear"
+      },
+      "comparison_points": [
+        {
+          "displacement_mm": -9.5,
+          "experiment_kN": -358.02,
+          "simulation_kN": 120.10122199292749,
+          "error_pct": 133.54595329672296
+        },
+        {
+          "displacement_mm": -5.12,
+          "experiment_kN": -301.16,
+          "simulation_kN": 248.4710485889253,
+          "error_pct": 182.50466482564926
+        },
+        {
+          "displacement_mm": 4.06,
+          "experiment_kN": 247.72,
+          "simulation_kN": 385.5603800074534,
+          "error_pct": 55.643621834108416
+        }
+      ],
+      "comparison_method": "same-sign force envelope within [0.95,1.02] experimental displacement; not cycle identification",
+      "conditional_reached_point_mean_absolute_error_pct": 123.89807998549354,
+      "curve_rows": 2345,
+      "experimental_accuracy_validated": false
+    },
+    {
+      "case": "sw2-2",
+      "material": "elastic",
+      "step": 0.02,
+      "name": "sw2-2-elastic-dt0.02",
+      "executable": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\paired-v6\\OpenSees-ADINA2D.exe",
+      "exe_sha256": "56eee50f136fd285b46cb8a9e56c124799d0083ea21e3b3976fcf97ec573bd3f",
+      "input_sha256": {
+        "config.tcl": "48e0fe2929ade96a86bef10095457409227e313fe56e65829a84daa0d64a8509",
+        "element.tcl": "df1055be14f0f41bae1889cefb6838581c85ab79fc761fa065808c1dc9edb0ee",
+        "model.tcl": "f96b313956298c2bfb0f20972fce46d7cec06585e60689e30b1f1a9177dad820",
+        "node.tcl": "0c0193e7fd1acd45f224679aaf81a09cd1aabcfdde7384ab65c2df8653d76024",
+        "shuju2.txt": "f04ac2f488f05749567636c9b7390cc1cca2bb7e208c219512ca745220f94ea5",
+        "wall_driver.tcl": "a0c9f5a0ec3015d71c075992810226032589721e11e834dcb1998a813df9a3e9"
+      },
+      "parameters_fitted": false,
+      "assumptions_unchanged_from_review": true,
+      "exit_code": 0,
+      "elapsed_s": "28",
+      "status": "complete",
+      "phase": "lateral",
+      "time": "46.900000",
+      "accepted": "2356",
+      "attempts": "2365",
+      "failures": "9",
+      "post_commit_bad_steps": "0",
+      "max_post_commit_norm_N": 115.48294893448023,
+      "max_global_x_imbalance_N": "129.50884687884536",
+      "max_global_y_imbalance_N": "154.85829874151386",
+      "message": "full path completed; post-commit residual audit determines validation eligibility",
+      "force_tolerance_N": 115.5,
+      "equilibrium_gate_bad_steps": 0,
+      "post_commit_steps_over_solver_tolerance": 0,
+      "complete_with_historical_equilibrium_gate": true,
+      "repository_commit": "bee596a3ab33e8e41b3ae85328ea71357542bb74",
+      "experimental_id": "shear_walls/sw2-2",
+      "experimental_sha256": "fc44a62705fb68a7488c4da0ca340c240f1b901f430ad7edb3eafbfa8d5abfda",
+      "experimental_points": 6,
+      "measurement": {
+        "displacement": "wall_top_displacement",
+        "force": "wall_base_shear"
+      },
+      "comparison_points": [
+        {
+          "displacement_mm": -9.5,
+          "experiment_kN": -358.02,
+          "simulation_kN": -152.61856794004802,
+          "error_pct": 57.371496581183166
+        },
+        {
+          "displacement_mm": -5.12,
+          "experiment_kN": -301.16,
+          "simulation_kN": -129.53354838055907,
+          "error_pct": 56.988461820773324
+        },
+        {
+          "displacement_mm": 4.06,
+          "experiment_kN": 247.72,
+          "simulation_kN": 166.95445086127526,
+          "error_pct": -32.60356416063488
+        }
+      ],
+      "comparison_method": "same-sign force envelope within [0.95,1.02] experimental displacement; not cycle identification",
+      "conditional_reached_point_mean_absolute_error_pct": 48.987840854197124,
+      "curve_rows": 2346,
+      "experimental_accuracy_validated": false
+    },
+    {
+      "case": "sw2-2",
+      "material": "plain",
+      "step": 0.02,
+      "name": "sw2-2-plain-dt0.02",
+      "executable": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\paired-v6\\OpenSees-PlainConcrete.exe",
+      "exe_sha256": "5b44b7ba13d8448fb1509b213ccdf2e4f9ce82c826d0a776f734f3276e23d4f2",
+      "input_sha256": {
+        "config.tcl": "48e0fe2929ade96a86bef10095457409227e313fe56e65829a84daa0d64a8509",
+        "element.tcl": "df1055be14f0f41bae1889cefb6838581c85ab79fc761fa065808c1dc9edb0ee",
+        "model.tcl": "0881e20afcfe26fdb0da1ca9487fab95bd999103ed7bcdb59d594d733c6ac0b4",
+        "node.tcl": "0c0193e7fd1acd45f224679aaf81a09cd1aabcfdde7384ab65c2df8653d76024",
+        "shuju2.txt": "f04ac2f488f05749567636c9b7390cc1cca2bb7e208c219512ca745220f94ea5",
+        "wall_driver.tcl": "a0c9f5a0ec3015d71c075992810226032589721e11e834dcb1998a813df9a3e9"
+      },
+      "parameters_fitted": false,
+      "assumptions_unchanged_from_review": true,
+      "exit_code": 1,
+      "elapsed_s": "47",
+      "status": "failed",
+      "phase": "lateral",
+      "time": "45.828871",
+      "accepted": "2312",
+      "attempts": "2398",
+      "failures": "86",
+      "post_commit_bad_steps": "0",
+      "max_post_commit_norm_N": 115.4992658348807,
+      "max_global_x_imbalance_N": "91.1384612568072",
+      "max_global_y_imbalance_N": "204.04871791484766",
+      "message": "strict analysis stalled at minimum increment 2e-5",
+      "force_tolerance_N": 115.5,
+      "equilibrium_gate_bad_steps": 0,
+      "post_commit_steps_over_solver_tolerance": 0,
+      "complete_with_historical_equilibrium_gate": false,
+      "repository_commit": "bee596a3ab33e8e41b3ae85328ea71357542bb74",
+      "experimental_id": "shear_walls/sw2-2",
+      "experimental_sha256": "fc44a62705fb68a7488c4da0ca340c240f1b901f430ad7edb3eafbfa8d5abfda",
+      "experimental_points": 6,
+      "measurement": {
+        "displacement": "wall_top_displacement",
+        "force": "wall_base_shear"
+      },
+      "comparison_points": [
+        {
+          "displacement_mm": -9.5,
+          "experiment_kN": -358.02,
+          "simulation_kN": -229.16003990916488,
+          "error_pct": 35.992391511880655
+        },
+        {
+          "displacement_mm": -5.12,
+          "experiment_kN": -301.16,
+          "simulation_kN": -409.8929074871725,
+          "error_pct": -36.10469766475378
+        },
+        {
+          "displacement_mm": 4.06,
+          "experiment_kN": 247.72,
+          "simulation_kN": 395.06429482544206,
+          "error_pct": 59.48017714574603
+        }
+      ],
+      "comparison_method": "same-sign force envelope within [0.95,1.02] experimental displacement; not cycle identification",
+      "conditional_reached_point_mean_absolute_error_pct": 43.859088774126825,
+      "curve_rows": 2302,
+      "experimental_accuracy_validated": false
+    },
+    {
+      "case": "sw1-1",
+      "material": "elastic",
+      "step": 0.01,
+      "name": "sw1-1-elastic-dt0.01",
+      "executable": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\paired-v6\\OpenSees-ADINA2D.exe",
+      "exe_sha256": "56eee50f136fd285b46cb8a9e56c124799d0083ea21e3b3976fcf97ec573bd3f",
+      "input_sha256": {
+        "config.tcl": "952bdb13cf47a096606b1eadb576297888c3172e2517caf564a1fc91accd5cd4",
+        "element.tcl": "593e60c1339ef8692ceaf88a7162b3260fd89089fcb9191b3f413bfff3e3bee9",
+        "model.tcl": "8f8014360e248f180d0e7c4e57f80ae6514a491e6ef13589dd84617e888788e4",
+        "node.tcl": "43212968dff839c558dfec7d76cd97dd6fd4eee8267a113a2da14a8097fa082b",
+        "shuju2.txt": "804907538bebe1d9bb095040f59a655043cfc9a0977cdba7bbad3628fe08c9d3",
+        "wall_driver.tcl": "a0c9f5a0ec3015d71c075992810226032589721e11e834dcb1998a813df9a3e9"
+      },
+      "parameters_fitted": false,
+      "assumptions_unchanged_from_review": true,
+      "exit_code": 0,
+      "elapsed_s": "211",
+      "status": "complete",
+      "phase": "lateral",
+      "time": "47.200000",
+      "accepted": "4730",
+      "attempts": "4730",
+      "failures": "0",
+      "post_commit_bad_steps": "0",
+      "max_post_commit_norm_N": 25.87263861490784,
+      "max_global_x_imbalance_N": "26.950556693482213",
+      "max_global_y_imbalance_N": "37.960631088295486",
+      "message": "full path completed; post-commit residual audit determines validation eligibility",
+      "force_tolerance_N": 25.875,
+      "equilibrium_gate_bad_steps": 0,
+      "post_commit_steps_over_solver_tolerance": 0,
+      "complete_with_historical_equilibrium_gate": true,
+      "repository_commit": "bee596a3ab33e8e41b3ae85328ea71357542bb74",
+      "experimental_id": "shear_walls/sw1-1",
+      "experimental_sha256": "23b3afc2d810e79615b9f805e8866d2f27563b73dc38918c75b72baba71fdb3a",
+      "experimental_points": 7,
+      "measurement": {
+        "displacement": "wall_top_displacement",
+        "force": "wall_base_shear"
+      },
+      "comparison_points": [
+        {
+          "displacement_mm": -21.55,
+          "experiment_kN": -168.63,
+          "simulation_kN": -119.49254529855148,
+          "error_pct": 29.13921289298969
+        },
+        {
+          "displacement_mm": -13.99,
+          "experiment_kN": -195.87,
+          "simulation_kN": -163.5051925191896,
+          "error_pct": 16.523616419467203
+        },
+        {
+          "displacement_mm": -5.79,
+          "experiment_kN": -160.71,
+          "simulation_kN": -171.07955343686953,
+          "error_pct": -6.452338645304911
+        },
+        {
+          "displacement_mm": 7.17,
+          "experiment_kN": 160.35,
+          "simulation_kN": 171.09780636854768,
+          "error_pct": 6.702716787369932
+        },
+        {
+          "displacement_mm": 14.86,
+          "experiment_kN": 188.84,
+          "simulation_kN": 106.46946153003096,
+          "error_pct": -43.61922181209969
+        },
+        {
+          "displacement_mm": 20.11,
+          "experiment_kN": 188.64,
+          "simulation_kN": 113.42882800564051,
+          "error_pct": -39.87021416155613
+        }
+      ],
+      "comparison_method": "same-sign force envelope within [0.95,1.02] experimental displacement; not cycle identification",
+      "conditional_reached_point_mean_absolute_error_pct": 23.717886786464593,
+      "curve_rows": 4720,
+      "experimental_accuracy_validated": false
+    },
+    {
+      "case": "2H16-Ref",
+      "material": "original",
+      "step": 0.0,
+      "name": "2H16-Ref-original",
+      "executable": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\paired-v6\\OpenSees-ADINA2D.exe",
+      "exe_sha256": "56eee50f136fd285b46cb8a9e56c124799d0083ea21e3b3976fcf97ec573bd3f",
+      "input_sha256": {
+        "beam_driver.tcl": "e5cc179827f8fa4e3d074490c8ccd4b1c7523ee6daa1eddca875b3eb90943561",
+        "config.tcl": "55002827d25727c13c75b21328351c3cc91b076e1c115a40ca5bbdce0c1f7fd7",
+        "experiment.csv": "0742989d805a2ddf455d17db28aafd498058787220123f806f6e8cc681d5af05",
+        "model.tcl": "ae7af6d33017405cb8956b8ecf5baacefa8190ab921e9c0bed984bd2291d75e6"
+      },
+      "parameters_fitted": false,
+      "assumptions_unchanged_from_review": true,
+      "exit_code": 0,
+      "elapsed_s": "61",
+      "status": "complete",
+      "phase": "final",
+      "accepted": "312",
+      "attempts": "315",
+      "bad_post_commit_steps": "0",
+      "max_post_commit_norm_N": 0.9977649776450783,
+      "time": "190299.315753",
+      "message": "experimental maximum underside deflection reached",
+      "force_tolerance_N": 1.0,
+      "equilibrium_gate_bad_steps": 0,
+      "post_commit_steps_over_solver_tolerance": 0,
+      "complete_with_historical_equilibrium_gate": true,
+      "repository_commit": "bee596a3ab33e8e41b3ae85328ea71357542bb74",
+      "experimental_id": "beams/2H16-Ref",
+      "experimental_sha256": "0742989d805a2ddf455d17db28aafd498058787220123f806f6e8cc681d5af05",
+      "experimental_points": 3297,
+      "measurement": {
+        "displacement": "beam_midspan_deflection",
+        "force": "beam_shear"
+      },
+      "comparison_points": [
+        {
+          "displacement_mm": 0.05,
+          "experiment_kN": 1.9482889879237648,
+          "simulation_kN": 5.980215051372782,
+          "error_pct": 206.9470231798479
+        },
+        {
+          "displacement_mm": 0.1,
+          "experiment_kN": 3.5775622967197256,
+          "simulation_kN": 12.004436233812566,
+          "error_pct": 235.54793007572385
+        },
+        {
+          "displacement_mm": 0.2,
+          "experiment_kN": 7.253081436341375,
+          "simulation_kN": 20.485829934977115,
+          "error_pct": 182.44312592897964
+        },
+        {
+          "displacement_mm": 0.3,
+          "experiment_kN": 10.859733792118055,
+          "simulation_kN": 23.042379858400093,
+          "error_pct": 112.18181126248368
+        },
+        {
+          "displacement_mm": 0.5,
+          "experiment_kN": 18.949616875358565,
+          "simulation_kN": 30.4049662742959,
+          "error_pct": 60.45161479667424
+        },
+        {
+          "displacement_mm": 0.75,
+          "experiment_kN": 24.520498472211475,
+          "simulation_kN": 35.48045962274097,
+          "error_pct": 44.6971384490824
+        },
+        {
+          "displacement_mm": 1.0,
+          "experiment_kN": 29.252715644882414,
+          "simulation_kN": 42.20497088561847,
+          "error_pct": 44.277103698582515
+        },
+        {
+          "displacement_mm": 1.5,
+          "experiment_kN": 39.384510885840044,
+          "simulation_kN": 55.7727901363499,
+          "error_pct": 41.610975690450815
+        },
+        {
+          "displacement_mm": 2.0,
+          "experiment_kN": 48.778306514914924,
+          "simulation_kN": 70.68653308287874,
+          "error_pct": 44.91387285301704
+        },
+        {
+          "displacement_mm": 2.5,
+          "experiment_kN": 56.80402079548281,
+          "simulation_kN": 85.99577573161872,
+          "error_pct": 51.390296896830414
+        },
+        {
+          "displacement_mm": 2.9,
+          "experiment_kN": 58.313856529447975,
+          "simulation_kN": 94.69518053089116,
+          "error_pct": 62.38881488325326
+        }
+      ],
+      "comparison_method": "monotonic interpolation",
+      "conditional_reached_point_mean_absolute_error_pct": 98.80451888317506,
+      "curve_rows": 293,
+      "experimental_accuracy_validated": false
+    },
+    {
+      "case": "2H16-Ref",
+      "material": "elastic",
+      "step": 0.0,
+      "name": "2H16-Ref-elastic",
+      "executable": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\paired-v6\\OpenSees-ADINA2D.exe",
+      "exe_sha256": "56eee50f136fd285b46cb8a9e56c124799d0083ea21e3b3976fcf97ec573bd3f",
+      "input_sha256": {
+        "beam_driver.tcl": "e5cc179827f8fa4e3d074490c8ccd4b1c7523ee6daa1eddca875b3eb90943561",
+        "config.tcl": "55002827d25727c13c75b21328351c3cc91b076e1c115a40ca5bbdce0c1f7fd7",
+        "experiment.csv": "0742989d805a2ddf455d17db28aafd498058787220123f806f6e8cc681d5af05",
+        "model.tcl": "7e9459233e734641f72eed4ae7ffcddcefabeb8719668f6588d903edf0f020b0"
+      },
+      "parameters_fitted": false,
+      "assumptions_unchanged_from_review": true,
+      "exit_code": 0,
+      "elapsed_s": "63",
+      "status": "complete",
+      "phase": "final",
+      "accepted": "312",
+      "attempts": "315",
+      "bad_post_commit_steps": "0",
+      "max_post_commit_norm_N": 0.9977649776450783,
+      "time": "190299.315753",
+      "message": "experimental maximum underside deflection reached",
+      "force_tolerance_N": 1.0,
+      "equilibrium_gate_bad_steps": 0,
+      "post_commit_steps_over_solver_tolerance": 0,
+      "complete_with_historical_equilibrium_gate": true,
+      "repository_commit": "bee596a3ab33e8e41b3ae85328ea71357542bb74",
+      "experimental_id": "beams/2H16-Ref",
+      "experimental_sha256": "0742989d805a2ddf455d17db28aafd498058787220123f806f6e8cc681d5af05",
+      "experimental_points": 3297,
+      "measurement": {
+        "displacement": "beam_midspan_deflection",
+        "force": "beam_shear"
+      },
+      "comparison_points": [
+        {
+          "displacement_mm": 0.05,
+          "experiment_kN": 1.9482889879237648,
+          "simulation_kN": 5.980215051372782,
+          "error_pct": 206.9470231798479
+        },
+        {
+          "displacement_mm": 0.1,
+          "experiment_kN": 3.5775622967197256,
+          "simulation_kN": 12.004436233812566,
+          "error_pct": 235.54793007572385
+        },
+        {
+          "displacement_mm": 0.2,
+          "experiment_kN": 7.253081436341375,
+          "simulation_kN": 20.485829934977115,
+          "error_pct": 182.44312592897964
+        },
+        {
+          "displacement_mm": 0.3,
+          "experiment_kN": 10.859733792118055,
+          "simulation_kN": 23.042379858400093,
+          "error_pct": 112.18181126248368
+        },
+        {
+          "displacement_mm": 0.5,
+          "experiment_kN": 18.949616875358565,
+          "simulation_kN": 30.4049662742959,
+          "error_pct": 60.45161479667424
+        },
+        {
+          "displacement_mm": 0.75,
+          "experiment_kN": 24.520498472211475,
+          "simulation_kN": 35.48045962274097,
+          "error_pct": 44.6971384490824
+        },
+        {
+          "displacement_mm": 1.0,
+          "experiment_kN": 29.252715644882414,
+          "simulation_kN": 42.20497088561847,
+          "error_pct": 44.277103698582515
+        },
+        {
+          "displacement_mm": 1.5,
+          "experiment_kN": 39.384510885840044,
+          "simulation_kN": 55.7727901363499,
+          "error_pct": 41.610975690450815
+        },
+        {
+          "displacement_mm": 2.0,
+          "experiment_kN": 48.778306514914924,
+          "simulation_kN": 70.68653308287874,
+          "error_pct": 44.91387285301704
+        },
+        {
+          "displacement_mm": 2.5,
+          "experiment_kN": 56.80402079548281,
+          "simulation_kN": 85.99577573161872,
+          "error_pct": 51.390296896830414
+        },
+        {
+          "displacement_mm": 2.9,
+          "experiment_kN": 58.313856529447975,
+          "simulation_kN": 94.69518053089116,
+          "error_pct": 62.38881488325326
+        }
+      ],
+      "comparison_method": "monotonic interpolation",
+      "conditional_reached_point_mean_absolute_error_pct": 98.80451888317506,
+      "curve_rows": 293,
+      "experimental_accuracy_validated": false
+    },
+    {
+      "case": "2H16-Ref",
+      "material": "plain",
+      "step": 0.0,
+      "name": "2H16-Ref-plain",
+      "executable": "C:\\Work\\OpenSees\\tmp\\adina-development-20261006\\paired-v6\\OpenSees-PlainConcrete.exe",
+      "exe_sha256": "5b44b7ba13d8448fb1509b213ccdf2e4f9ce82c826d0a776f734f3276e23d4f2",
+      "input_sha256": {
+        "beam_driver.tcl": "e5cc179827f8fa4e3d074490c8ccd4b1c7523ee6daa1eddca875b3eb90943561",
+        "config.tcl": "55002827d25727c13c75b21328351c3cc91b076e1c115a40ca5bbdce0c1f7fd7",
+        "experiment.csv": "0742989d805a2ddf455d17db28aafd498058787220123f806f6e8cc681d5af05",
+        "model.tcl": "22ec8187ce6d2b50c8626654976a1c370681bab2272514aea4f18d3d735279d6"
+      },
+      "parameters_fitted": false,
+      "assumptions_unchanged_from_review": true,
+      "exit_code": 1,
+      "elapsed_s": "59",
+      "status": "failed",
+      "phase": "final",
+      "accepted": "64",
+      "attempts": "109",
+      "bad_post_commit_steps": "0",
+      "max_post_commit_norm_N": 0.9992592898018157,
+      "time": "80180.607793",
+      "message": "displacement analysis stalled at minimum increment",
+      "force_tolerance_N": 1.0,
+      "equilibrium_gate_bad_steps": 0,
+      "post_commit_steps_over_solver_tolerance": 0,
+      "complete_with_historical_equilibrium_gate": false,
+      "repository_commit": "bee596a3ab33e8e41b3ae85328ea71357542bb74",
+      "experimental_id": "beams/2H16-Ref",
+      "experimental_sha256": "0742989d805a2ddf455d17db28aafd498058787220123f806f6e8cc681d5af05",
+      "experimental_points": 3297,
+      "measurement": {
+        "displacement": "beam_midspan_deflection",
+        "force": "beam_shear"
+      },
+      "comparison_points": [
+        {
+          "displacement_mm": 0.05,
+          "experiment_kN": 1.9482889879237648,
+          "simulation_kN": 6.050738301910058,
+          "error_pct": 210.5667762541816
+        },
+        {
+          "displacement_mm": 0.1,
+          "experiment_kN": 3.5775622967197256,
+          "simulation_kN": 12.095563211062485,
+          "error_pct": 238.09511080080796
+        },
+        {
+          "displacement_mm": 0.2,
+          "experiment_kN": 7.253081436341375,
+          "simulation_kN": 24.086407302200122,
+          "error_pct": 232.0851628869877
+        },
+        {
+          "displacement_mm": 0.3,
+          "experiment_kN": 10.859733792118055,
+          "simulation_kN": 33.38395256244416,
+          "error_pct": 207.41041356533137
+        }
+      ],
+      "comparison_method": "monotonic interpolation",
+      "conditional_reached_point_mean_absolute_error_pct": 222.03936587682716,
+      "curve_rows": 45,
+      "experimental_accuracy_validated": false
+    }
+  ],
+  "step_sensitivity": {
+    "maximum_difference_kN": 102.31171282526294,
+    "maximum_difference_over_fine_peak": 0.5491710260673431,
+    "rms_over_fine_peak": 0.13382309868292785,
+    "maximum_displacement_mismatch_mm": 1.9441045995272077e-11,
+    "up_to_12mm_max_difference_kN": 102.31171282526294,
+    "first_reaction_difference_over_solver_tolerance": {
+      "time": 0.02,
+      "displacement_mm": 0.19999999999999998,
+      "coarse_kN": 13.694277836376772,
+      "fine_kN": 14.785071829949702,
+      "threshold_kN": 0.025875
+    },
+    "first_differences_at_recorded_locations": [
+      {
+        "time": 0.02,
+        "element": 1,
+        "layer": 1,
+        "stress_difference_threshold_Pa": 3000.0,
+        "coarse_stress_Pa": [
+          -157627.30535960777,
+          -965880.3658969416,
+          -9776.4603602437,
+          4.466570045e-11,
+          2.64911831e-12
+        ],
+        "fine_stress_Pa": [
+          -147230.9772549262,
+          -903463.937772929,
+          -506.2794507362194,
+          4.464468524e-11,
+          8.6122264e-13
+        ],
+        "coarse_strain": [
+          1.79177559546672e-06,
+          -4.731547413228907e-05,
+          -1.64457146873212e-06,
+          0.0,
+          0.0
+        ],
+        "fine_strain": [
+          1.69867165906475e-06,
+          -4.463877680564547e-05,
+          -6.6708726985588e-07,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "time": 0.02,
+        "element": 2,
+        "layer": 1,
+        "stress_difference_threshold_Pa": 3000.0,
+        "coarse_stress_Pa": [
+          -253389.34347872421,
+          -1437128.111663614,
+          62482.06661184356,
+          -1.834002653e-11,
+          3.2022062e-13
+        ],
+        "fine_stress_Pa": [
+          -246605.5834720378,
+          -1400059.2008608528,
+          69619.60201745646,
+          -1.913207196e-11,
+          3.01892962e-12
+        ],
+        "coarse_strain": [
+          1.67254766287498e-06,
+          -6.797372750930967e-05,
+          7.73155488394334e-06,
+          -0.0,
+          0.0
+        ],
+        "fine_strain": [
+          1.64474647784009e-06,
+          -6.641727797928594e-05,
+          8.4454057018869e-06,
+          -0.0,
+          0.0
+        ]
+      },
+      {
+        "time": 0.02,
+        "element": 2,
+        "layer": 3,
+        "stress_difference_threshold_Pa": 3000.0,
+        "coarse_stress_Pa": [
+          0.0,
+          -13635529.738367517,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "fine_stress_Pa": [
+          0.0,
+          -13323305.962644756,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "coarse_strain": [
+          1.67254766287498e-06,
+          -6.797372750930965e-05,
+          7.73155488394334e-06,
+          -0.0,
+          0.0
+        ],
+        "fine_strain": [
+          1.64474647784009e-06,
+          -6.641727797928592e-05,
+          8.4454057018869e-06,
+          -0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  "gf_diagnostic": {
+    "status": "failed",
+    "phase": "lateral",
+    "time": "2.440000",
+    "accepted": "138",
+    "attempts": "272",
+    "failures": "134",
+    "post_commit_bad_steps": "0",
+    "max_post_commit_norm_N": "25.400018647350496",
+    "max_global_x_imbalance_N": "7.994601147023786",
+    "max_global_y_imbalance_N": "15.235759940202115",
+    "elapsed_s": "301",
+    "message": "internal wall-clock limit reached"
+  },
+  "difftest3d_objectivity": {
+    "manual:compression_crush_release:raw": {
+      "compared_steps": 800,
+      "full_path": true,
+      "maximum_error_over_fc": 1.356309150916483e-08,
+      "maximum_error_step": 207
+    },
+    "manual:compression_crush_release:cpp": {
+      "compared_steps": 800,
+      "full_path": true,
+      "maximum_error_over_fc": 4.263256414560601e-14,
+      "maximum_error_step": 557
+    },
+    "manual:crush_reverse:raw": {
+      "compared_steps": 1200,
+      "full_path": true,
+      "maximum_error_over_fc": 1.7738386344963906e-08,
+      "maximum_error_step": 210
+    },
+    "manual:crush_reverse:cpp": {
+      "compared_steps": 1200,
+      "full_path": true,
+      "maximum_error_over_fc": 4.3816802038539514e-14,
+      "maximum_error_step": 1179
+    },
+    "manual:biaxial_crush:raw": {
+      "compared_steps": 421,
+      "full_path": false,
+      "maximum_error_over_fc": 6.773840747579622e-14,
+      "maximum_error_step": 415
+    },
+    "manual:biaxial_crush:cpp": {
+      "compared_steps": 421,
+      "full_path": false,
+      "maximum_error_over_fc": 2.7000623958883806e-14,
+      "maximum_error_step": 406
+    },
+    "manual:triaxial_nonproportional:raw": {
+      "compared_steps": 284,
+      "full_path": false,
+      "maximum_error_over_fc": 2.3447910280083305e-14,
+      "maximum_error_step": 283
+    },
+    "manual:triaxial_nonproportional:cpp": {
+      "compared_steps": 284,
+      "full_path": false,
+      "maximum_error_over_fc": 1.2268704570791063e-13,
+      "maximum_error_step": 234
+    },
+    "manual:two_compressions_shear:raw": {
+      "compared_steps": 443,
+      "full_path": false,
+      "maximum_error_over_fc": 3.126388037344441e-14,
+      "maximum_error_step": 442
+    },
+    "manual:two_compressions_shear:cpp": {
+      "compared_steps": 443,
+      "full_path": false,
+      "maximum_error_over_fc": 8.384404281969183e-14,
+      "maximum_error_step": 379
+    },
+    "manual:tension_closure:raw": {
+      "compared_steps": 140,
+      "full_path": true,
+      "maximum_error_over_fc": 2.2275422617568096e-10,
+      "maximum_error_step": 79
+    },
+    "manual:tension_closure:cpp": {
+      "compared_steps": 140,
+      "full_path": true,
+      "maximum_error_over_fc": 6.300515664747763e-16,
+      "maximum_error_step": 96
+    },
+    "manual:three_cracks_closure:raw": {
+      "compared_steps": 238,
+      "full_path": true,
+      "maximum_error_over_fc": 2.2197526779640004e-10,
+      "maximum_error_step": 9
+    },
+    "manual:three_cracks_closure:cpp": {
+      "compared_steps": 238,
+      "full_path": true,
+      "maximum_error_over_fc": 4.736951571734001e-15,
+      "maximum_error_step": 237
+    },
+    "manual:crack_then_crush:raw": {
+      "compared_steps": 860,
+      "full_path": true,
+      "maximum_error_over_fc": 3.300383966120535e-10,
+      "maximum_error_step": 535
+    },
+    "manual:crack_then_crush:cpp": {
+      "compared_steps": 860,
+      "full_path": true,
+      "maximum_error_over_fc": 4.3579954459952814e-14,
+      "maximum_error_step": 525
+    },
+    "manual:crushed_nonproportional_release:raw": {
+      "compared_steps": 3213,
+      "full_path": true,
+      "maximum_error_over_fc": 1.4768131676371846e-06,
+      "maximum_error_step": 438
+    },
+    "manual:crushed_nonproportional_release:cpp": {
+      "compared_steps": 3213,
+      "full_path": true,
+      "maximum_error_over_fc": 4.405364961712621e-14,
+      "maximum_error_step": 480
+    },
+    "sw1-1:compression_crush_release:raw": {
+      "compared_steps": 800,
+      "full_path": true,
+      "maximum_error_over_fc": 1.4198072325991569e-08,
+      "maximum_error_step": 184
+    },
+    "sw1-1:compression_crush_release:cpp": {
+      "compared_steps": 800,
+      "full_path": true,
+      "maximum_error_over_fc": 4.7712773077610596e-14,
+      "maximum_error_step": 500
+    },
+    "sw1-1:crush_reverse:raw": {
+      "compared_steps": 1200,
+      "full_path": true,
+      "maximum_error_over_fc": 2.1432923069181452e-08,
+      "maximum_error_step": 186
+    },
+    "sw1-1:crush_reverse:cpp": {
+      "compared_steps": 1200,
+      "full_path": true,
+      "maximum_error_over_fc": 3.295270658597566e-14,
+      "maximum_error_step": 1180
+    },
+    "sw1-1:biaxial_crush:raw": {
+      "compared_steps": 382,
+      "full_path": false,
+      "maximum_error_over_fc": 3.432573602705798e-14,
+      "maximum_error_step": 381
+    },
+    "sw1-1:biaxial_crush:cpp": {
+      "compared_steps": 382,
+      "full_path": false,
+      "maximum_error_over_fc": 3.0549905064081605e-14,
+      "maximum_error_step": 381
+    },
+    "sw1-1:triaxial_nonproportional:raw": {
+      "compared_steps": 205,
+      "full_path": false,
+      "maximum_error_over_fc": 4.805603043788117e-15,
+      "maximum_error_step": 182
+    },
+    "sw1-1:triaxial_nonproportional:cpp": {
+      "compared_steps": 205,
+      "full_path": false,
+      "maximum_error_over_fc": 5.6637464444645666e-14,
+      "maximum_error_step": 204
+    },
+    "sw1-1:two_compressions_shear:raw": {
+      "compared_steps": 422,
+      "full_path": false,
+      "maximum_error_over_fc": 2.3684757858670007e-14,
+      "maximum_error_step": 418
+    },
+    "sw1-1:two_compressions_shear:cpp": {
+      "compared_steps": 422,
+      "full_path": false,
+      "maximum_error_over_fc": 5.389140556248103e-14,
+      "maximum_error_step": 198
+    },
+    "sw1-1:tension_closure:raw": {
+      "compared_steps": 140,
+      "full_path": true,
+      "maximum_error_over_fc": 2.5595914598780605e-09,
+      "maximum_error_step": 94
+    },
+    "sw1-1:tension_closure:cpp": {
+      "compared_steps": 140,
+      "full_path": true,
+      "maximum_error_over_fc": 6.865147205411596e-16,
+      "maximum_error_step": 139
+    },
+    "sw1-1:three_cracks_closure:raw": {
+      "compared_steps": 238,
+      "full_path": true,
+      "maximum_error_over_fc": 1.8196327858337213e-09,
+      "maximum_error_step": 36
+    },
+    "sw1-1:three_cracks_closure:cpp": {
+      "compared_steps": 238,
+      "full_path": true,
+      "maximum_error_over_fc": 3.3467592626381533e-15,
+      "maximum_error_step": 237
+    },
+    "sw1-1:crack_then_crush:raw": {
+      "compared_steps": 860,
+      "full_path": true,
+      "maximum_error_over_fc": 2.7368258324131513e-07,
+      "maximum_error_step": 538
+    },
+    "sw1-1:crack_then_crush:cpp": {
+      "compared_steps": 860,
+      "full_path": true,
+      "maximum_error_over_fc": 2.3727665028703828e-14,
+      "maximum_error_step": 853
+    },
+    "sw1-1:crushed_nonproportional_release:raw": {
+      "compared_steps": 3213,
+      "full_path": true,
+      "maximum_error_over_fc": 1.4624821723807742e-06,
+      "maximum_error_step": 441
+    },
+    "sw1-1:crushed_nonproportional_release:cpp": {
+      "compared_steps": 3213,
+      "full_path": true,
+      "maximum_error_over_fc": 3.2094563185299215e-14,
+      "maximum_error_step": 509
+    }
+  },
+  "common_reached_displacement_comparison": [
+    {
+      "case": "sw1-1",
+      "common_displacements_mm": [
+        -21.55,
+        -13.99,
+        -5.79,
+        7.17,
+        14.86,
+        20.11
+      ],
+      "method": "same-sign force envelope within [0.95,1.02] experimental displacement; not cycle identification",
+      "experimental_accuracy_validated": false,
+      "mean_absolute_error_pct": {
+        "sw1-1-original-dt0.02": 30.035280525921877,
+        "sw1-1-elastic-dt0.02": 17.758073720733588,
+        "sw1-1-plain-dt0.02": 4.404316641498265
+      }
+    },
+    {
+      "case": "sw1-3",
+      "common_displacements_mm": [
+        5.76
+      ],
+      "method": "same-sign force envelope within [0.95,1.02] experimental displacement; not cycle identification",
+      "experimental_accuracy_validated": false,
+      "mean_absolute_error_pct": {
+        "sw1-3-original-dt0.02": 5.902384278305919,
+        "sw1-3-elastic-dt0.02": 3.4268808591682736,
+        "sw1-3-plain-dt0.02": 26.10845234791651
+      }
+    },
+    {
+      "case": "sw2-2",
+      "common_displacements_mm": [
+        -9.5,
+        -5.12,
+        4.06
+      ],
+      "method": "same-sign force envelope within [0.95,1.02] experimental displacement; not cycle identification",
+      "experimental_accuracy_validated": false,
+      "mean_absolute_error_pct": {
+        "sw2-2-original-dt0.02": 123.89807998549354,
+        "sw2-2-elastic-dt0.02": 48.987840854197124,
+        "sw2-2-plain-dt0.02": 43.859088774126825
+      }
+    },
+    {
+      "case": "2H16-Ref",
+      "common_displacements_mm": [
+        0.05,
+        0.1,
+        0.2,
+        0.3
+      ],
+      "method": "monotonic interpolation",
+      "experimental_accuracy_validated": false,
+      "mean_absolute_error_pct": {
+        "2H16-Ref-original": 184.27997261175875,
+        "2H16-Ref-elastic": 184.27997261175875,
+        "2H16-Ref-plain": 222.03936587682716
+      }
+    }
+  ],
+  "log_sha256": {
+    "C:\\Work\\OpenSees\\tmp\\adina-regression2dv6-20261006.log": "c603b7996c18f8406430480601925bb053ecf990ebe585cc53da172d8faeb331",
+    "C:\\Work\\OpenSees\\tmp\\adina-regression3dv6-20261006.log": "cf8e6b45f67d1f4260ef2135b653d8dd506944112a41e2134c0328f8dbf8ae30",
+    "C:\\Work\\OpenSees\\tmp\\adina-shellv6-20261006.log": "2657f2c3c5686dd5da4a14050269b63c49c4398dd63d8082b49e92d684bf0cb0",
+    "C:\\Work\\OpenSees\\tmp\\adina-brickv6-20261006.log": "43fd0e0a773fce3444fd3f3c0a77ca06e91ef5b182539cddac1d3b6f8ef8fff1",
+    "C:\\Work\\OpenSees\\tmp\\adina-failurev6-20261006.log": "ccef3460380314af272b9c9ff7e63fc87e18b56a264a25a7dad6e8a84a1c0ad0",
+    "C:\\Work\\OpenSees\\tmp\\adina-lifecyclereplay-20261006.log": "a44a1d55caf1e8fc86f1f97d5104d8d58e2c0aabc57a44a67b5d1d2645cae822",
+    "C:\\Work\\OpenSees\\tmp\\adina-fractureelastic-20261006.log": "04c528864c219c204d9335b1cf4dd33d3b74de6260cfe919314dd9d64f5f12f2",
+    "C:\\Work\\OpenSees\\tmp\\adina-fractureexplicit-20261006.log": "04c528864c219c204d9335b1cf4dd33d3b74de6260cfe919314dd9d64f5f12f2",
+    "C:\\Work\\OpenSees\\tmp\\adina-brickfree-replay-v6-20261006.log": "96ee0b2573bb9f2cb85563a20335b829df92a477d9eebe595f3690d6a72bc487",
+    "C:\\Work\\OpenSees\\tmp\\adina-brickfree-original-v6-20261006.log": "a831a2858d5daaf8bd654fc681152e2835032fb5a44c1fa08c12e86dc755859c"
+  },
+  "overall_qualified": false,
+  "experimental_accuracy_validated": false
+}

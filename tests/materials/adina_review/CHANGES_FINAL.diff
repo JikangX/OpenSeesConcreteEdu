@@ -1,0 +1,979 @@
+diff --git a/src-before/AdinaConcrete2D.cpp b/production-final/AdinaConcrete2D.cpp
+index d0084e7..d64f2d9 100644
+--- a/src-before/AdinaConcrete2D.cpp
++++ b/production-final/AdinaConcrete2D.cpp
+@@ -6,6 +6,10 @@
+ #include <Information.h>
+ #include <cmath>
+ #include <cstring>
++#ifdef ADINA_TRACE
++#include <cstdio>
++#include <cstdlib>
++#endif
+ #include <limits>
+ #include <stdexcept>
+ 
+@@ -43,25 +47,41 @@ void AdinaConcrete2D::synchronize(const adina::plane::Matrix3& c) {
+ int AdinaConcrete2D::setTrialStrain(const Vector& v) {
+     if(v.Size()!=getOrder()) return -1;
+     for(int i=0;i<v.Size();++i) if(!std::isfinite(v(i))) return -1;
+-    // Element residual/tangent requests can repeat the identical trial. Reuse
+-    // the owned response only while the committed origin is unchanged. After
+-    // commit the trial equals the origin and its new loading-branch Jacobian
+-    // must be recomputed. Exact comparison avoids hiding a small crack event.
++    // In-place iteration is incremental from the current trial: requesting
++    // that exact same strain is a read, even immediately after commit/restore
++    // or rollback. A zero-increment replay can otherwise reclassify a brittle
++    // boundary and change the history merely because Domain::update() ran.
++    // Committed replay retains its former Jacobian-recomputation convention.
++    // Exact comparison avoids suppressing a real, small strain increment.
+     bool identical=true,differentOrigin=false;
+     for(int i=0;i<v.Size();++i) {
+         identical=identical && v(i)==strain(i);
+         const double origin=i<3 ? committed.strain[i] : committedShear[i-3];
+         differentOrigin=differentOrigin || v(i)!=origin;
+     }
+-    if(identical && differentOrigin) return 0;
++    if(identical && (differentOrigin || parameters.update==adina::Parameters::Update::Iterative)) return 0;
+     // Compute ALL prospective outputs first. Failed substeps or tangents must
+     // not replace trial history, transverse strain, or any returned buffer.
+     adina::plane::Vector3 e{{v(0),v(1),v(2)}};
++    // Origin: previous iteration (ADINA's in-place WA update, default) or
++    // last commit (-update committed); see adina::Parameters::Update.
++    const adina::plane::State& origin=
++        parameters.update==adina::Parameters::Update::Iterative ? trial : committed;
+     adina::plane::State next;adina::plane::Matrix3 c;std::string error;
+-    if(!adina::plane::integrate(parameters,committed,e,next,&c,error)) {
++    if(!adina::plane::integrate(parameters,origin,e,next,&c,error)) {
+         opserr << "AdinaConcrete2D " << getTag() << ": " << error.c_str() << endln;return -1;
+     }
+     if(plate && (!std::isfinite(transverseG*v(3)) || !std::isfinite(transverseG*v(4)))) return -1;
++#ifdef ADINA_TRACE
++    // Diagnostic builds only: report state changes between successive trials
++    // while the environment variable ADINA_TRACE is set.
++    if(std::getenv("ADINA_TRACE") && (trial.open!=next.open || trial.crushed!=next.crushed ||
++       trial.released!=next.released || trial.hasCrackFrame!=next.hasCrackFrame))
++        std::fprintf(stderr,"TRACE %p open %d%d->%d%d crushed %d->%d released %d->%d e=(%.3e %.3e %.3e) s=(%.3g %.3g %.3g)\n",
++            (void*)this,int(trial.open[0]),int(trial.open[1]),int(next.open[0]),int(next.open[1]),
++            int(trial.crushed),int(next.crushed),int(trial.released),int(next.released),e[0],e[1],e[2],
++            next.stress[0],next.stress[1],next.stress[2]);
++#endif
+     trial=next;if(plate) trialShear={{v(3),v(4)}};
+     synchronize(c);return 0;
+ }
+@@ -107,7 +127,11 @@ namespace {
+ // transverse strains(4), two 3x3 tangents(18). Never serialize struct padding.
+ // Version 2 appends Gf/Lch and two planes' three-value histories for BOTH
+ // committed and trial points. The first 97 entries retain the v1 layout.
+-constexpr int wireVersion=2,wireSize=111,legacyWireSize=97;
++// Version 3 appends the tangent, update and crushed-unloading options and
++// each state's crushed-strain history and release flag. v1/v2 messages come
++// from the replay-from-commit, finite-difference-tangent formulation and are
++// restored with exactly those options (crushed unloading: original).
++constexpr int wireVersion=3,wireSize=118,v2WireSize=111,legacyWireSize=97;
+ void pack(Vector& v,int& k,const adina::plane::State& s) {
+     for(double x:s.strain) v(k++)=x;
+     for(double x:s.stress) v(k++)=x;
+@@ -145,16 +169,25 @@ int AdinaConcrete2D::sendSelf(int commitTag,Channel& channel) {
+     for(const auto* state:{&committed,&trial}) for(const auto& h:state->tension) {
+         v(k++)=h.kappa;v(k++)=h.strength;v(k++)=h.offset;
+     }
++    v(k++)=parameters.tangent==adina::Parameters::Tangent::Secant ? 0. : 1.;
++    v(k++)=double(int(parameters.update)); // 0 iterative, 1 committed
++    v(k++)=parameters.crushedUnloading==adina::Parameters::CrushedUnloading::Original ? 0. : 1.;
++    v(k++)=committed.crushedStrain;v(k++)=trial.crushedStrain;
++    v(k++)=committed.released;v(k++)=trial.released;
+     return k==wireSize ? channel.sendVector(getDbTag(),commitTag,v) : -1;
+ }
+ int AdinaConcrete2D::recvSelf(int commitTag,Channel& channel,FEM_ObjectBroker&) {
+     Vector v(wireSize);
+     if(channel.recvVector(getDbTag(),commitTag,v)<0) {
+-        // FileDatastore keys vectors by size; v1 needs its original length.
+-        v.resize(legacyWireSize);if(channel.recvVector(getDbTag(),commitTag,v)<0)return -1;
++        // FileDatastore keys vectors by size; older versions need their length.
++        v.resize(v2WireSize);
++        if(channel.recvVector(getDbTag(),commitTag,v)<0) {
++            v.resize(legacyWireSize);if(channel.recvVector(getDbTag(),commitTag,v)<0)return -1;
++        }
+     }
+     const bool legacy=v.Size()==legacyWireSize && v(0)==1.;
+-    if(!legacy && (v.Size()!=wireSize || v(0)!=wireVersion))return -1;
++    const bool v2=v.Size()==v2WireSize && v(0)==2.;
++    if(!legacy && !v2 && (v.Size()!=wireSize || v(0)!=wireVersion))return -1;
+     for(int i=0;i<v.Size();++i) if(!std::isfinite(v(i))) return -1;
+     if(v(1)<std::numeric_limits<int>::min() || v(1)>std::numeric_limits<int>::max() ||
+        std::floor(v(1))!=v(1) || (v(2)!=0. && v(2)!=1.) || v(3)<=0.) return -1;
+@@ -181,10 +214,27 @@ int AdinaConcrete2D::recvSelf(int commitTag,Channel& channel,FEM_ObjectBroker&)
+         }
+         if(!p.validate(error))return -1;
+     }
++    p.tangent=adina::Parameters::Tangent::Algorithmic;p.update=adina::Parameters::Update::Committed;
++    if(!legacy && !v2) {
++        if((v(k)!=0. && v(k)!=1.) || (v(k+1)!=0. && v(k+1)!=1.) || (v(k+2)!=0. && v(k+2)!=1.))
++            return -1;
++        p.tangent=v(k++)==0. ? adina::Parameters::Tangent::Secant : adina::Parameters::Tangent::Algorithmic;
++        p.update=static_cast<adina::Parameters::Update>(int(v(k++)));
++        p.crushedUnloading=v(k++)==0. ? adina::Parameters::CrushedUnloading::Original
++                                      : adina::Parameters::CrushedUnloading::Elastic;
++        cs.crushedStrain=v(k++);ts.crushedStrain=v(k++);
++        if((v(k)!=0. && v(k)!=1.) || (v(k+1)!=0. && v(k+1)!=1.)) return -1;
++        cs.released=v(k++)!=0.;ts.released=v(k++)!=0.;
++        if((cs.released && !cs.crushed) || (ts.released && !ts.crushed)) return -1;
++    }
+     if(k!=v.Size()) return -1;
+     for(const auto* state:{&cs,&ts})for(const auto& h:state->tension)
+         if(!adina::fracture::compatible(h,p.E,p.fractureEnergy,p.characteristicLength,state->hasCrackFrame))return -1;
+     for(const auto* state:{&cs,&ts}) {
++        // After crushing the tensile law is inactive and its per-plane
++        // history is frozen. Subsequent strains need not lie below that old
++        // tensile maximum; reject impossible active tensile histories only.
++        if(state->crushed) continue;
+         const auto e=adina::plane::strainToLocal(state->strain,state->angle);
+         for(int i=0;i<2;++i)if(state->tension[i].strength>0.) {
+             const double eta=e[i]-state->tension[i].offset;
+diff --git a/src-before/AdinaConcrete2DFactory.cpp b/production-final/AdinaConcrete2DFactory.cpp
+index d045eaf..1a40f09 100644
+--- a/src-before/AdinaConcrete2DFactory.cpp
++++ b/production-final/AdinaConcrete2DFactory.cpp
+@@ -1,5 +1,6 @@
+ // Tcl/Python parsing is separate from the NDMaterial lifecycle and numerics.
+ #include "AdinaConcrete2D.h"
++#include "AdinaConcreteOptions.h"
+ #include <elementAPI.h>
+ #include <cstring>
+ #include <cmath>
+@@ -11,7 +12,9 @@ void* create(bool plate) {
+     if(OPS_GetNumRemainingInputArgs()<8) {
+         opserr << "Want: nDMaterial AdinaConcrete2D tag E nu ft fc epsc fu epsu "
+                 "<-G transverseG> <-rho rho> <-retention normal shear> <-controls beta gamma kappa alpha> "
+-                "<-envelope 24_values> <-maxStrainIncrement value> <-fractureEnergy Gf Lch>\n";
++                "<-envelope 24_values> <-maxStrainIncrement value> <-fractureEnergy Gf Lch> "
++                "<-tangent secant|algorithmic> <-update iterative|committed> "
++                "<-crushedUnloading original|elastic>\n";
+         return nullptr;
+     }
+     int tag,n=1;
+@@ -22,8 +25,13 @@ void* create(bool plate) {
+     p.E=data[0];p.nu=data[1];p.ft=data[2];p.fc=data[3];
+     p.epsc=data[4];p.fu=data[5];p.epsu=data[6];
+     double G=p.E/(2.*(1.+p.nu));
++    adina::SolverOptionSelection solverOptions;
+     while(OPS_GetNumRemainingInputArgs()>0) {
+         const char* option=OPS_GetString();
++        solverOptions.observe(option);
++        int keyword=adina::parseKeywordOption(option,p);
++        if(keyword<0) {opserr << "AdinaConcrete2D: invalid value for " << option << endln;return nullptr;}
++        if(keyword>0) continue;
+         double values[24];
+         if(!std::strcmp(option,"-G") || !std::strcmp(option,"-rho") || !std::strcmp(option,"-maxStrainIncrement")) n=1;
+         else if(!std::strcmp(option,"-retention") || !std::strcmp(option,"-fractureEnergy")) n=2;
+@@ -44,6 +52,7 @@ void* create(bool plate) {
+             p.sp1[i]=values[i];p.sp31[i]=values[i+6];p.sp32[i]=values[i+12];p.sp33[i]=values[i+18];
+         }
+     }
++    solverOptions.applyDefaults(p);
+     std::string error;
+     if(!p.validate(error)) {opserr << "AdinaConcrete2D: " << error.c_str() << endln;return nullptr;}
+     if(!std::isfinite(G) || G<=0.) {opserr << "AdinaConcrete2D: -G must be positive and finite\n";return nullptr;}
+diff --git a/src-before/AdinaConcrete3D.cpp b/production-final/AdinaConcrete3D.cpp
+index 4146c67..f36f6ff 100644
+--- a/src-before/AdinaConcrete3D.cpp
++++ b/production-final/AdinaConcrete3D.cpp
+@@ -24,20 +24,24 @@ void AdinaConcrete3D::synchronize(const adina::Matrix6& c) {
+     }
+ }
+ int AdinaConcrete3D::setTrialStrain(const Vector& v) {
+-    // Every Newton evaluation replays from the last COMMIT, never from the
+-    // previous trial. Do not assign output buffers until the full stress and
+-    // algorithmic tangent calculation has succeeded (strong failure guarantee).
++    // The update starts from the previous iteration (ADINA, default) or from
++    // the last commit (-update committed); see adina::Parameters::Update.
++    // Do not assign output buffers until the full stress and tangent
++    // calculation has succeeded (strong failure guarantee).
+     if(v.Size()!=6) {opserr << "AdinaConcrete3D requires six engineering strain components\n";return -1;}
+     adina::Vector6 eps;for(int i=0;i<6;++i) eps[i]=v(i);
++    // A repeated request for the current trial strain must not apply a
++    // second (zero) increment to the in-place iterative history.
++    if(parameters.update==adina::Parameters::Update::Iterative && eps==trial.strain) return 0;
++    const adina::State& origin=parameters.update==adina::Parameters::Update::Iterative ? trial : committed;
+     adina::State next;adina::Matrix6 c;std::string error;
+-    if(!adina::integrate(parameters,committed,eps,next,&c,error)) {
++    if(!adina::integrate(parameters,origin,eps,next,&c,error)) {
+         opserr << "AdinaConcrete3D " << getTag() << ": " << error.c_str() << endln;return -1;
+     }
+     trial=next;synchronize(c);return 0;
+ }
+ int AdinaConcrete3D::setTrialStrainIncr(const Vector& v) {
+-    // OpenSees defines this increment relative to the current trial strain;
+-    // the resulting total strain still integrates from committed history.
++    // OpenSees defines this increment relative to the current trial strain.
+     if(v.Size()!=6) return -1;
+     Vector eps(strain);eps+=v;return setTrialStrain(eps);
+ }
+@@ -55,7 +59,14 @@ int AdinaConcrete3D::revertToStart() {
+     for(int i=0;i<6;++i) for(int j=0;j<6;++j) initialTangent(i,j)=committedTangent[i][j];
+     synchronize(committedTangent);return 0;
+ }
+-NDMaterial* AdinaConcrete3D::getCopy() {return new AdinaConcrete3D(*this);}
++NDMaterial* AdinaConcrete3D::getCopy() {
++    auto* copy=new AdinaConcrete3D(*this);
++    // A material point cloned from a checkpoint owns a new Channel identity.
++    // Keeping the source dbTag would make sibling integration points overwrite
++    // one another when an element sends their histories to a database.
++    copy->setDbTag(0);
++    return copy;
++}
+ NDMaterial* AdinaConcrete3D::getCopy(const char* type) {
+     return type && (!std::strcmp(type,"ThreeDimensional") || !std::strcmp(type,"3D")) ? getCopy() : nullptr;
+ }
+@@ -66,7 +77,11 @@ namespace {
+ // preserved, so restart between a trial and its commit is deterministic too.
+ // Version 2 appends optional fracture parameters and physical-plane history;
+ // a v1 checkpoint remains readable as the default original ADINA mode.
+-constexpr int wireVersion=2,wireSize=193,legacyWireSize=173;
++// Version 3 appends the tangent, update and crushed-unloading options and
++// each state's crushed-strain history. v1/v2 messages come
++// from the replay-from-commit, finite-difference-tangent formulation and are
++// restored with exactly those options (crushed unloading: original).
++constexpr int wireVersion=3,wireSize=198,v2WireSize=193,legacyWireSize=173;
+ void packState(Vector& v,int& k,const adina::State& s) {
+     for(double x:s.strain) v(k++)=x;for(double x:s.stress) v(k++)=x;
+     v(k++)=s.maximumLoading;v(k++)=s.hasCrackFrame;v(k++)=s.crushed;v(k++)=s.openCracks;
+@@ -105,15 +120,24 @@ int AdinaConcrete3D::sendSelf(int commitTag,Channel& channel) {
+     for(const auto* state:{&committed,&trial})for(const auto& h:state->tension) {
+         v(k++)=h.kappa;v(k++)=h.strength;v(k++)=h.offset;
+     }
++    v(k++)=parameters.tangent==adina::Parameters::Tangent::Secant ? 0. : 1.;
++    v(k++)=double(int(parameters.update)); // 0 iterative, 1 committed
++    v(k++)=parameters.crushedUnloading==adina::Parameters::CrushedUnloading::Original ? 0. : 1.;
++    v(k++)=committed.crushedStrain;v(k++)=trial.crushedStrain;
+     return k==wireSize ? channel.sendVector(getDbTag(),commitTag,v) : -1;
+ }
+ int AdinaConcrete3D::recvSelf(int commitTag,Channel& channel,FEM_ObjectBroker&) {
+     Vector v(wireSize);
++    // FileDatastore keys vectors by size: older versions need their length.
+     if(channel.recvVector(getDbTag(),commitTag,v)<0) {
+-        v.resize(legacyWireSize);if(channel.recvVector(getDbTag(),commitTag,v)<0)return -1;
++        v.resize(v2WireSize);
++        if(channel.recvVector(getDbTag(),commitTag,v)<0) {
++            v.resize(legacyWireSize);if(channel.recvVector(getDbTag(),commitTag,v)<0)return -1;
++        }
+     }
+     const bool legacy=v.Size()==legacyWireSize && v(0)==1.;
+-    if(!legacy && (v.Size()!=wireSize || v(0)!=wireVersion))return -1;
++    const bool v2=v.Size()==v2WireSize && v(0)==2.;
++    if(!legacy && !v2 && (v.Size()!=wireSize || v(0)!=wireVersion))return -1;
+     for(int i=0;i<v.Size();++i) if(!std::isfinite(v(i))) return -1;
+     if(v(1)<std::numeric_limits<int>::min() || v(1)>std::numeric_limits<int>::max() ||
+        std::floor(v(1))!=v(1)) return -1;
+@@ -135,10 +159,23 @@ int AdinaConcrete3D::recvSelf(int commitTag,Channel& channel,FEM_ObjectBroker&)
+         }
+         if(!p.validate(error))return -1;
+     }
++    p.tangent=adina::Parameters::Tangent::Algorithmic;p.update=adina::Parameters::Update::Committed;
++    if(!legacy && !v2) {
++        if((v(k)!=0. && v(k)!=1.) || (v(k+1)!=0. && v(k+1)!=1.) || (v(k+2)!=0. && v(k+2)!=1.))
++            return -1;
++        p.tangent=v(k++)==0. ? adina::Parameters::Tangent::Secant : adina::Parameters::Tangent::Algorithmic;
++        p.update=static_cast<adina::Parameters::Update>(int(v(k++)));
++        p.crushedUnloading=v(k++)==0. ? adina::Parameters::CrushedUnloading::Original
++                                      : adina::Parameters::CrushedUnloading::Elastic;
++        cs.crushedStrain=v(k++);ts.crushedStrain=v(k++);
++    }
+     if(k!=v.Size()) return -1;
+     for(const auto* state:{&cs,&ts})for(const auto& h:state->tension)
+         if(!adina::fracture::compatible(h,p.E,p.fractureEnergy,p.characteristicLength,state->hasCrackFrame))return -1;
+     for(const auto* state:{&cs,&ts}) {
++        // Crushing supersedes the cohesive law. The saved tensile maxima
++        // remain historical values, not bounds on later crushed strains.
++        if(state->crushed) continue;
+         const auto e=adina::strainToLocal(state->strain,state->frame);
+         for(int i=0;i<3;++i)if(state->tension[i].strength>0.) {
+             const double eta=e[i]-state->tension[i].offset;
+diff --git a/src-before/AdinaConcrete3DFactory.cpp b/production-final/AdinaConcrete3DFactory.cpp
+index 109067b..dd71590 100644
+--- a/src-before/AdinaConcrete3DFactory.cpp
++++ b/production-final/AdinaConcrete3DFactory.cpp
+@@ -1,5 +1,6 @@
+ // Tcl/Python parsing is separate from the NDMaterial lifecycle and numerics.
+ #include "AdinaConcrete3D.h"
++#include "AdinaConcreteOptions.h"
+ #include <elementAPI.h>
+ #include <cstring>
+ 
+@@ -9,7 +10,9 @@ void* OPS_AdinaConcrete3D() {
+     if(OPS_GetNumRemainingInputArgs()<8) {
+         opserr << "Want: nDMaterial AdinaConcrete3D tag E nu ft fc epsc fu epsu "
+                 "<-rho rho> <-retention normal shear> <-controls beta gamma kappa alpha> "
+-                "<-envelope 24_values> <-maxStrainIncrement value> <-fractureEnergy Gf Lch>\n";
++                "<-envelope 24_values> <-maxStrainIncrement value> <-fractureEnergy Gf Lch> "
++                "<-tangent secant|algorithmic> <-update iterative|committed> "
++                "<-crushedUnloading original|elastic>\n";
+         return nullptr;
+     }
+     int tag,n=1;
+@@ -19,8 +22,13 @@ void* OPS_AdinaConcrete3D() {
+     adina::Parameters p;
+     p.E=data[0];p.nu=data[1];p.ft=data[2];p.fc=data[3];
+     p.epsc=data[4];p.fu=data[5];p.epsu=data[6];
++    adina::SolverOptionSelection solverOptions;
+     while(OPS_GetNumRemainingInputArgs()>0) {
+         const char* option=OPS_GetString();
++        solverOptions.observe(option);
++        int keyword=adina::parseKeywordOption(option,p);
++        if(keyword<0) {opserr << "AdinaConcrete3D: invalid value for " << option << endln;return nullptr;}
++        if(keyword>0) continue;
+         double values[24];
+         if(!std::strcmp(option,"-rho") || !std::strcmp(option,"-maxStrainIncrement")) n=1;
+         else if(!std::strcmp(option,"-retention") || !std::strcmp(option,"-fractureEnergy")) n=2;
+@@ -40,6 +48,7 @@ void* OPS_AdinaConcrete3D() {
+             p.sp1[i]=values[i];p.sp31[i]=values[i+6];p.sp32[i]=values[i+12];p.sp33[i]=values[i+18];
+         }
+     }
++    solverOptions.applyDefaults(p);
+     std::string error;
+     if(!p.validate(error)) {opserr << "AdinaConcrete3D: " << error.c_str() << endln;return nullptr;}
+     return new AdinaConcrete3D(tag,p);
+diff --git a/production-final/AdinaConcreteOptions.h b/production-final/AdinaConcreteOptions.h
+new file mode 100644
+index 0000000..2887149
+--- /dev/null
++++ b/production-final/AdinaConcreteOptions.h
+@@ -0,0 +1,50 @@
++// Keyword options shared by the AdinaConcrete2D and AdinaConcrete3D factories.
++#ifndef OPS_ADINA_CONCRETE_OPTIONS_H
++#define OPS_ADINA_CONCRETE_OPTIONS_H
++#include <elementAPI.h>
++#include <cstring>
++#include "adinaConcrete3D/Concrete3D.h"
++
++namespace adina {
++/** Record explicit solver options so order-independent defaults can be used
++ * for the optional continuous cohesive law. Brittle original mode retains
++ * secant/iterative; regularized mode defaults to committed replay and its
++ * algorithmic Jacobian. Newton trial overshoots must not become irreversible
++ * physical cohesive damage before an increment has actually converged.
++ * Explicit user options always take precedence, including research runs of
++ * the path-dependent iterative variant; those require separate verification.
++ */
++struct SolverOptionSelection {
++    bool tangent=false, update=false;
++    void observe(const char* option) {
++        tangent=tangent || !std::strcmp(option,"-tangent");
++        update=update || !std::strcmp(option,"-update");
++    }
++    void applyDefaults(Parameters& p) const {
++        if(p.regularizedTension()) {
++            if(!tangent) p.tangent=Parameters::Tangent::Algorithmic;
++            if(!update) p.update=Parameters::Update::Committed;
++        }
++    }
++};
++/** Parse "-tangent", "-update" or "-crushedUnloading" and its keyword value.
++ * Returns 1 when `option` was one of them and has been applied, 0 when it is
++ * some other option, -1 when its value is missing or not recognised.
++ */
++inline int parseKeywordOption(const char* option,Parameters& p) {
++    const bool tangent=!std::strcmp(option,"-tangent"),update=!std::strcmp(option,"-update"),
++               crushed=!std::strcmp(option,"-crushedUnloading");
++    if(!tangent && !update && !crushed) return 0;
++    const char* value=OPS_GetNumRemainingInputArgs()>0 ? OPS_GetString() : "";
++    auto is=[&](const char* x) {return !std::strcmp(value,x);};
++    if(tangent && is("secant")) p.tangent=Parameters::Tangent::Secant;
++    else if(tangent && is("algorithmic")) p.tangent=Parameters::Tangent::Algorithmic;
++    else if(update && is("iterative")) p.update=Parameters::Update::Iterative;
++    else if(update && is("committed")) p.update=Parameters::Update::Committed;
++    else if(crushed && is("original")) p.crushedUnloading=Parameters::CrushedUnloading::Original;
++    else if(crushed && is("elastic")) p.crushedUnloading=Parameters::CrushedUnloading::Elastic;
++    else return -1;
++    return 1;
++}
++}
++#endif
+diff --git a/src-before/SHA256SUMS b/src-before/SHA256SUMS
+deleted file mode 100644
+index 76e4a8b..0000000
+--- a/src-before/SHA256SUMS
++++ /dev/null
+@@ -1,12 +0,0 @@
+-61254ba72c79e5fa64e63fea9142b24cda880d91623ba56271804ed7f0be5e73 adinaConcrete2D/Concrete2D.cpp
+-e1911ed13818b7a534b6f8339e4d699cd6f11e936b4fea49c8789c2ae263505e adinaConcrete2D/Concrete2D.h
+-5e64d1a840296d58376a62bb7f5142526ebbd22ff4b7898fcb51c03d3a06583a AdinaConcrete2D.cpp
+-8892d0e94ac6ea0b4043f46f6ad6c7f870e457b210c154184d68eadb7872c9ab AdinaConcrete2D.h
+-383d86f1d862cca529884b63b5c3a042ed5e4d26df32d6c16478b4049330bff4 AdinaConcrete2DFactory.cpp
+-0b64dd7ac5e57bfbc2bb77f5aa693d83936ac4db8b965ca83fe4f0f3378df0a1 adinaConcrete3D/BranchTangent.h
+-bb3c2179ec31adf9f22518519448022b402af16eb3678b6389750902ffd8a916 adinaConcrete3D/Concrete3D.cpp
+-6bdf646d0128e284feeae52acdf26d31a9c209090f7edc682c8ba9f9bfb9bdf5 adinaConcrete3D/Concrete3D.h
+-d55043365c25bf49e56bc774474d199382a17727440f71e4fd9b588ac72c8d8c adinaConcrete3D/TensionSoftening.h
+-91697cae8ee9397717514a9517146093d68b3e5c5e1500d561be33030311e394 AdinaConcrete3D.cpp
+-b44c4bf0aef25892a5254b64780ef259f3156fb2acc3dbaf45021b5feaf97caa AdinaConcrete3D.h
+-4dbd8877faffd3a2fed25b4a28cd5e6780c1cb4a1887ddbeff306e818c2fa48a AdinaConcrete3DFactory.cpp
+diff --git a/src-before/adinaConcrete2D/Concrete2D.cpp b/production-final/adinaConcrete2D/Concrete2D.cpp
+index 9134754..32b5dfa 100644
+--- a/src-before/adinaConcrete2D/Concrete2D.cpp
++++ b/production-final/adinaConcrete2D/Concrete2D.cpp
+@@ -19,6 +19,10 @@ double measure(const Parameters& p, const Vector3& s) {
+     return std::sqrt((s[0]*s[0]+s[1]*s[1]-s[0]*s[1])/3.+s[2]*s[2])
+            +p.alpha*(s[0]+s[1]);
+ }
++// Smallest in-plane principal strain; e[2] is the engineering shear strain.
++double minPrincipalStrain(const Vector3& e) {
++    return .5*(e[0]+e[1])-std::hypot(.5*(e[0]-e[1]),.5*e[2]);
++}
+ double average(const Parameters& p,const Strength& s,double a,double b) {
+     // CDMOD's three-point Gauss integration of the rational tangent.
+     constexpr double g=.77459666924148337704;
+@@ -39,7 +43,12 @@ Vector3 product(const Matrix3& c,const Vector3& e) {
+  */
+ Matrix3 stiffness(const Parameters& p,const Vector3& s,
+                   const std::array<double,3>& yp,bool ortho,
+-                  const std::array<bool,2>& open) {
++                  const std::array<bool,2>& open,
++                  std::array<double,2> retention={{-1.,-1.}}) {
++    // retention[i] scales the normal stiffness of open crack plane i. The
++    // stress update always uses STIFAC for both planes (A06 DCRACK); only the
++    // secant iteration matrix supplies a larger per-plane cohesive value.
++    for(double& r:retention) if(r<0.) r=p.normalRetention;
+     const double den=std::abs(s[0])+std::abs(s[1]);
+     const double E=den>1.e-5*p.ft ? (std::abs(s[0])*yp[0]+std::abs(s[1])*yp[1])/den : p.E;
+     // CDMOD distinguishes the total-modulus threshold from its pair modulus:
+@@ -68,13 +77,15 @@ Matrix3 stiffness(const Parameters& p,const Vector3& s,
+             const int a=open[0] ? 0 : 1,b=1-a;
+             for(int j=0;j<4;++j) {
+                 const int i=std::min(a,j),k=std::max(a,j);
+-                c[i][k]*=p.normalRetention;
++                c[i][k]*=retention[a];
+             }
+             c[b][b]=(ortho ? yp[b] : E)/(1.-p.nu*p.nu);
+             c[b][3]=p.nu*(ortho ? (b==0 ? e14 : e24) : E)/(1.-p.nu*p.nu);
+             c[3][3]=(ortho ? yp[2] : E)/(1.-p.nu*p.nu);
+         } else {
+-            for(int i=0;i<2;++i) for(int j=i;j<4;++j) c[i][j]*=p.normalRetention;
++            // With equal factors this is DCRACK's single STIFAC scaling.
++            for(int i=0;i<2;++i) for(int j=i;j<4;++j)
++                c[i][j]*=(i==0 && j==1 ? std::min(retention[0],retention[1]) : retention[i]);
+             c[3][3]=ortho ? yp[2] : E;
+         }
+     }
+@@ -136,15 +147,51 @@ State step(const Parameters& p,const State& old,const Vector3& target) {
+     Strength strength=old.crushed ? Strength{old.crushingStress,old.crushingStrain,p.ft}
+                                   : strengthEnvelope(p,{{sig[0],sig[1],0.}});
+     if(old.crushed) {
++        const double ultimate=p.epsu*strength.peakStrain/p.epsc;
++        Vector3 de{};for(int i=0;i<3;++i) de[i]=target[i]-old.strain[i];
++        if(p.crushedUnloading==Parameters::CrushedUnloading::Elastic && !old.released) {
++            // Optional extension (see Parameters::CrushedUnloading). Strains
++            // less compressive than the crushed history unload/reload with E;
++            // principal stresses are capped at zero. Points already released
++            // at the ultimate strain stay released (original law below).
++            const double emin=minPrincipalStrain(target);
++            if(emin>old.crushedStrain) {
++                Vector3 s=product(elasticTangent(p.E,p.nu),de);
++                for(int i=0;i<3;++i) s[i]+=old.stress[i];
++                const double a=principalAngle(s);
++                Vector3 local=stressToLocal(s,a);
++                // No tension; compression bounded by the crushed curve at the
++                // most compressive strain reached (the unloading point).
++                const double cap=compressionStress(p,strength,old.crushedStrain);
++                for(int i=0;i<2;++i) local[i]=std::clamp(local[i],cap,0.);
++                local[2]=0.;
++                out.stress=stressToGlobal(local,a);
++                return out;
++            }
++            out.crushedStrain=emin;
++        }
+         // CDMOD retains the peak stress, then descends with the tangent along
+         // the most compressed principal direction; beyond scaled epsu all
+         // stress is released. sigma_zz stays zero throughout.
+         double E=p.E*p.normalRetention;
+-        if(f!=0.) E=std::min(0.,average(p,strength,e0[1],e1[1]));
+-        Vector3 de{};for(int i=0;i<3;++i) de[i]=target[i]-old.strain[i];
++        // CDMOD label 9, crushed: N1 selects the more compressed of P2 and
++        // sigma_zz(=0), and YP keeps E (so the modulus becomes 0) unless that
++        // stress is below 0.001*SIGCP. Softening therefore stops once the
++        // smallest principal stress has left compression: the stress is frozen,
++        // it is not driven into tension by a negative isotropic modulus.
++        if(f!=0.) E=sig[1]<.001*strength.compression
++                    ? std::min(0.,average(p,strength,e0[1],e1[1])) : 0.;
+         const Vector3 ds=product(elasticTangent(E,p.nu),de);
+         for(int i=0;i<3;++i) out.stress[i]=old.stress[i]+ds[i];
+-        if(std::min(e1[0],e1[1])<=p.epsu*strength.peakStrain/p.epsc) out.stress.fill(0.);
++        // CDMOD label 60 recomputes EP in the principal frame of the UPDATED
++        // stress and DCRACK (NUMCRK=3) keeps it only while EP(1), EP(2) and the
++        // plane-stress thickness strain EP(4) all exceed the scaled epsu.
++        const Vector3 e=strainToLocal(target,principalAngle(out.stress));
++        const double ezz=p.nu/(p.nu-1.)*(target[0]+target[1]);
++        if(std::min({e[0],e[1],ezz})<=ultimate) {
++            out.stress.fill(0.);out.released=true;
++            out.crushedStrain=std::min(out.crushedStrain,ultimate);
++        }
+         return out;
+     }
+     bool transition=false;
+@@ -184,7 +231,13 @@ State step(const Parameters& p,const State& old,const Vector3& target) {
+     if(std::min(sig[0],sig[1])<=strength.compression) {
+         out.crushed=true;out.crushingStress=strength.compression;
+         out.crushingStrain=strength.peakStrain;
+-        if(std::min(e1[0],e1[1])<=p.epsu*strength.peakStrain/p.epsc) sig.fill(0.);
++        out.crushedStrain=minPrincipalStrain(target);
++        // DCRACK also tests the plane-stress thickness strain TEP(4).
++        const double ezz=p.nu/(p.nu-1.)*(target[0]+target[1]);
++        const double ultimate=p.epsu*strength.peakStrain/p.epsc;
++        if(std::min({e1[0],e1[1],ezz})<=ultimate) {
++            sig.fill(0.);out.released=true;out.crushedStrain=std::min(out.crushedStrain,ultimate);
++        }
+     } else {
+         for(int i=0;i<2;++i) if(out.open[i]) {
+             if(p.regularizedTension()) {
+@@ -215,6 +268,59 @@ State replay(const Parameters& p,const State& committed,const Vector3& target,in
+     }
+     return out;
+ }
++/** Material (secant) iteration matrix of a converged/trial state.
++ * This is the matrix CDMOD rebuilds after a stress update (labels 69-110):
++ * - crushed: isotropic E*STIFAC (CDMOD: E<=0 -> EKK(1)*STIFAC);
++ * - unloading (loading function below its maximum): initial modulus E;
++ * - loading: rational-curve tangents YP of the local strains (ITEM=2, one
++ *   point), stress-weighted as in the stress update; MOD45 orthotropy;
++ * - open cracks: DCRACK retention. With fracture energy, an open plane uses
++ *   its cohesive secant s(kappa)/kappa, so the matrix bounds the unloading/
++ *   reloading stiffness instead of under-estimating it by ~1/STIFAC.
++ * Non-positive curve tangents are replaced by the curve secant (bounded below
++ * by STIFAC*E): the matrix stays symmetric positive semidefinite. It is not
++ * the derivative of the stress map and does not change any converged state.
++ */
++Matrix3 secantStiffness(const Parameters& p,const State& s) {
++    if(s.crushed) {
++        // Elastic crushed unloading (optional): E while the point is in its
++        // compressive unloading/reloading range, otherwise ADINA's E*STIFAC.
++        if(p.crushedUnloading==Parameters::CrushedUnloading::Elastic && !s.released &&
++           minPrincipalStrain(s.strain)>s.crushedStrain && std::min(s.stress[0],s.stress[1])<0.)
++            return elasticTangent(p.E,p.nu);
++        return elasticTangent(p.E*std::max(p.normalRetention,1.e-12),p.nu);
++    }
++    const double angle=s.hasCrackFrame ? s.angle : principalAngle(s.stress);
++    const Vector3 sig=stressToLocal(s.stress,angle),eps=strainToLocal(s.strain,angle);
++    const Strength strength=strengthEnvelope(p,{{sig[0],sig[1],0.}});
++    const double f=measure(p,s.stress);
++    // Same test as CDMOD's IKAS; the loading function can be negative (alpha).
++    const bool loading=std::abs(f-s.maximumLoading)<=std::abs(s.maximumLoading)*1.e-8;
++    std::array<double,3> yp{{p.E,p.E,p.E}};
++    if(loading && std::abs(sig[0])+std::abs(sig[1])>1.e-5*p.ft)
++        for(int i=0;i<2;++i) if(sig[i]<.001*strength.compression) {
++            double t=compressionTangent(p,strength,eps[i]);
++            if(!(t>0.)) t=eps[i]<0. ? compressionStress(p,strength,eps[i])/eps[i] : p.E;
++            yp[i]=std::max(t,p.normalRetention*p.E);
++        }
++    const bool ortho=std::min(sig[0],sig[1])<p.kappa*strength.compression;
++    std::array<double,2> retention{{p.normalRetention,p.normalRetention}};
++    if(p.regularizedTension()) for(int i=0;i<2;++i) if(s.open[i] && s.tension[i].strength>0.) {
++        const auto& h=s.tension[i];
++        const double secant=fracture::envelope(p.E,p.fractureEnergy,p.characteristicLength,h,h.kappa)/h.kappa;
++        retention[i]=std::max(p.normalRetention,std::min(1.,secant/p.E));
++    }
++    const Matrix3 local=stiffness(p,sig,yp,ortho,s.open,retention);
++    // Global matrix R^T C R with R the strain rotation; stressToGlobal = R^T.
++    Matrix3 out{};
++    for(int j=0;j<3;++j) {
++        Vector3 unit{};unit[j]=1.;
++        const Vector3 column=stressToGlobal(product(local,strainToLocal(unit,angle)),angle);
++        for(int i=0;i<3;++i) out[i][j]=column[i];
++    }
++    for(int i=0;i<3;++i) for(int j=i+1;j<3;++j) out[i][j]=out[j][i]=.5*(out[i][j]+out[j][i]);
++    return out;
++}
+ bool sameActiveBranch(const State& a,const State& b) {
+     return a.hasCrackFrame==b.hasCrackFrame && a.crushed==b.crushed && a.open==b.open;
+ }
+@@ -244,7 +350,7 @@ bool validateState(const State& s,std::string& error) {
+         if(!std::isfinite(x)) {error="non-finite committed history";return false;}
+     for(const auto& h:s.tension) if(!fracture::valid(h)) {error="invalid tensile fracture history";return false;}
+     if((!s.hasCrackFrame && (s.open[0] || s.open[1])) ||
+-       (s.crushed && (s.crushingStress>=0. || s.crushingStrain>=0.))) {
++       (s.crushed && (s.crushingStress>=0. || s.crushingStrain>=0.)) || (s.released && !s.crushed)) {
+         error="inconsistent crack/crushing history";return false;
+     }
+     return true;
+@@ -262,7 +368,8 @@ bool integrate(const Parameters& p,const State& committed,const Vector3& target,
+     try {
+         const State next=replay(p,committed,target,n);
+         Matrix3 c{};
+-        if(tangent) c=numerics::replayJacobian<3>(target,next,p.epsc,
++        if(tangent && p.tangent==Parameters::Tangent::Secant) c=secantStiffness(p,next);
++        else if(tangent) c=numerics::replayJacobian<3>(target,next,p.epsc,
+             [&](const Vector3& e) {return replay(p,committed,e,n);},
+             [&](const State& state) {
+                 if(!sameActiveBranch(state,next)) return false;
+diff --git a/src-before/adinaConcrete2D/Concrete2D.h b/production-final/adinaConcrete2D/Concrete2D.h
+index 12afede..9df6790 100644
+--- a/src-before/adinaConcrete2D/Concrete2D.h
++++ b/production-final/adinaConcrete2D/Concrete2D.h
+@@ -29,6 +29,11 @@ struct State {
+     // formation strains retain their ADINA meaning and are not repurposed.
+     std::array<fracture::History,2> tension {};
+     double crushingStress = 0., crushingStrain = 0.;
++    // Most compressive in-plane principal strain reached since crushing (0
++    // before). Used only by Parameters::CrushedUnloading::Elastic.
++    double crushedStrain = 0.;
++    // All stress released at the scaled ultimate strain (DCRACK, NUMCRK=3).
++    bool released = false;
+ };
+ 
+ // Work-conjugate transformations. Engineering shear requires DIFFERENT
+diff --git a/src-before/adinaConcrete3D/Concrete3D.cpp b/production-final/adinaConcrete3D/Concrete3D.cpp
+index f2befd4..8c9e60a 100644
+--- a/src-before/adinaConcrete3D/Concrete3D.cpp
++++ b/production-final/adinaConcrete3D/Concrete3D.cpp
+@@ -11,6 +11,20 @@ namespace {
+ constexpr int pairIndex[3][2] = {{0,1},{1,2},{0,2}};
+ using Tensor = Frame;
+ 
++// Compare tensile eigenvalues in stress units. Rotating an identical tensor
++// perturbs a root by a few ulps; a strict comparison at exactly ft can then
++// release a complete stress component one loading step earlier. Use the same
++// roundoff tie rule for first cracking and later planes. Preserve CMOD3D's
++// strict first-onset comparison and CRAK3D's inclusive comparisons when all
++// planes are closed or the third plane forms. This is not a material-strength
++// tolerance: only a 64-epsilon neighborhood is treated as equality. The factor
++// is dimensionless, so Pa and MPa descriptions make the same decision.
++bool exceedsTensileCutoff(double stress, double cutoff, bool inclusive=false) {
++    const double roundoff=64.*std::numeric_limits<double>::epsilon()
++        *std::max(std::abs(stress),std::abs(cutoff));
++    return inclusive ? stress>=cutoff-roundoff : stress>cutoff+roundoff;
++}
++
+ Tensor tensor(const Vector6& x, bool engineering) {
+     Tensor a {};
+     for (int i=0; i<3; ++i) a[i][i]=x[i];
+@@ -55,6 +69,13 @@ Curve coefficients(const Parameters& p, const Strength& s) {
+     return {a,2.*p.E/es-3.-2.*a,2.-p.E/es+a};
+ }
+ 
++// Smallest principal value of an engineering-shear strain vector.
++double minPrincipalStrain(const Vector6& e) {
++    Vector6 tensorial=e;
++    for (int i=3; i<6; ++i) tensorial[i]*=.5;
++    return principalStress(tensorial).values[2];
++}
++
+ // Three Gauss points reproduce CMOD3D's increment-averaged tangent rather
+ // than substituting a different damage/plasticity model for the ADINA law.
+ double averageTangent(const Parameters& p, const Strength& s, double a, double b) {
+@@ -71,7 +92,12 @@ double averageTangent(const Parameters& p, const Strength& s, double a, double b
+  * incremental stiffness, not a tensile softening curve or fracture energy.
+  */
+ Matrix6 localStiffness(const Parameters& p, const Vector6& sig,
+-                      const std::array<double,3>& yp, bool orthotropic, int cracks) {
++                      const std::array<double,3>& yp, bool orthotropic, int cracks,
++                      std::array<double,3> retention={{-1.,-1.,-1.}}) {
++    // retention[i] scales the normal stiffness of open crack plane i. The
++    // stress update always uses STIFAC (DCRAK3); only the secant iteration
++    // matrix supplies a larger per-plane cohesive value.
++    for(double& r:retention) if(r<0.) r=p.normalRetention;
+     double sum=0., E=0.;
+     for (int i=0; i<3; ++i) { sum+=std::abs(sig[i]); E+=std::abs(sig[i])*yp[i]; }
+     // CMOD3D uses 1e-5*SIGMAT for the TOTAL stress-weighted modulus.
+@@ -101,7 +127,7 @@ Matrix6 localStiffness(const Parameters& p, const Vector6& sig,
+     if (cracks==0 || cracks==4) return c;
+     for (int k=3; k<6; ++k) c[k][k]*=p.shearRetention;
+     if (cracks==1) {
+-        for (int i=0; i<3; ++i) c[0][i]*=p.normalRetention;
++        for (int i=0; i<3; ++i) c[0][i]*=retention[0];
+         // Condense the released first normal direction (plane stress), but do
+         // not condense its tiny retained diagonal again.
+         c[1][1]=(orthotropic ? yp[1] : E)/(1.-p.nu*p.nu);
+@@ -109,10 +135,14 @@ Matrix6 localStiffness(const Parameters& p, const Vector6& sig,
+         c[1][2]=p.nu*(orthotropic ? pair[1] : E)/(1.-p.nu*p.nu);
+         c[4][4]=(orthotropic ? pair[1] : E)/(2.*(1.+p.nu));
+     } else if (cracks==2) {
+-        for (int i=0; i<2; ++i) for (int j=i; j<3; ++j) c[i][j]*=p.normalRetention;
++        // Equal factors reproduce DCRAK3's single STIFAC scaling exactly; a
++        // coupling between two open planes takes the smaller factor.
++        for (int i=0; i<2; ++i) for (int j=i; j<3; ++j)
++            c[i][j]*=(j<2 && i!=j ? std::min(retention[i],retention[j]) : retention[i]);
+         c[2][2]=orthotropic ? yp[2] : E;
+     } else {
+-        for (int i=0; i<3; ++i) for (int j=i; j<3; ++j) c[i][j]*=p.normalRetention;
++        for (int i=0; i<3; ++i) for (int j=i; j<3; ++j)
++            c[i][j]*=(i!=j ? std::min(retention[i],retention[j]) : retention[i]);
+     }
+     for (int i=0; i<3; ++i) for (int j=i+1; j<3; ++j) c[j][i]=c[i][j];
+     return c;
+@@ -180,7 +210,12 @@ void updateCracks(const Parameters& p,State& state,Vector6& sig,Vector6& eps) {
+             if(formed==1 && state.tension[0].strength>0.) {
+                 const double m=.5*(sig[1]+sig[2]),r=std::hypot(.5*(sig[1]-sig[2]),sig[4]);
+                 const double cutoff=m-r<0. ? p.ft*(1.-(m-r)/p.fc) : p.ft;
+-                if(m+r>cutoff) {
++                // Beyond the compressive failure surface this interaction
++                // cutoff can become nonpositive. That is a crushing event,
++                // not a new tensile cohesive plane with negative strength.
++                // Leave it to step()'s compression check; never call form()
++                // with a nonphysical strength in the tensile extension.
++                if(cutoff>0. && m+r>cutoff) {
+                     rotateTransverse(state,sig,eps);
+                     for(int i=1;i<3;++i) if(sig[i]>cutoff) {
+                         active[i]=true;state.crackStrain[i]=eps[i];
+@@ -206,7 +241,7 @@ void updateCracks(const Parameters& p,State& state,Vector6& sig,Vector6& eps) {
+         return eps[i]<-tol && eps[i]<state.crackStrain[i]-tol;
+     };
+     if(old==0) {
+-        for(int i=0;i<3;++i) if(sig[i]>=p.ft) {
++        for(int i=0;i<3;++i) if(exceedsTensileCutoff(sig[i],p.ft,true)) {
+             active[i]=true;state.crackStrain[i]=eps[i];
+         }
+     } else if(old==1) {
+@@ -215,16 +250,16 @@ void updateCracks(const Parameters& p,State& state,Vector6& sig,Vector6& eps) {
+         const double r=std::hypot(.5*(sig[1]-sig[2]),sig[4]);
+         double cutoff=p.ft;
+         if(m-r<0.) cutoff=p.ft*(1.-(m-r)/p.fc);
+-        if(m+r>cutoff) {
++        if(exceedsTensileCutoff(m+r,cutoff)) {
+             // Diagonalize even when shear==0: the larger transverse principal
+             // stress may be in the third, rather than second, stored direction.
+             rotateTransverse(state,sig,eps);
+             active[1]=true;state.crackStrain[1]=eps[1];
+-            if(m-r>cutoff) {active[2]=true;state.crackStrain[2]=eps[2];}
++            if(exceedsTensileCutoff(m-r,cutoff)) {active[2]=true;state.crackStrain[2]=eps[2];}
+         }
+     } else if(old==2) {
+         for(int i=0;i<2;++i) if(closed(i)) active[i]=false;
+-        if(sig[2]>=p.ft) {active[2]=true;state.crackStrain[2]=eps[2];}
++        if(exceedsTensileCutoff(sig[2],p.ft,true)) {active[2]=true;state.crackStrain[2]=eps[2];}
+     } else {
+         for(int i=0;i<3;++i) if(closed(i)) active[i]=false;
+     }
+@@ -258,8 +293,19 @@ State step(const Parameters& p, const State& old, const Vector6& target) {
+             if((a>0. && b<=0.) || (a<0. && b>=0.)) {sig[i]=0.;eps0[i]=out.tension[i].offset;}
+         }
+     }
++    // CMOD3D obtains SIGCP/EPSCP (curve and MOD45 threshold) from the KKK=1
++    // call of CRAK3D. With exactly one open crack (label 111) it sorts the
++    // crack-normal stress together with the two PRINCIPAL values of the
++    // transverse 2x2 block, not its normal components; with 0 or 2 cracks it
++    // uses the crack-frame normal stresses (label 107), which is what `sig`
++    // holds. The distinction matters whenever transverse shear is present.
++    std::array<double,3> envelopeStress {{sig[0],sig[1],sig[2]}};
++    if(old.hasCrackFrame && !old.crushed && old.openCracks==1) {
++        const double m=.5*(sig[1]+sig[2]),r=std::hypot(.5*(sig[1]-sig[2]),sig[4]);
++        envelopeStress={{sig[0],m+r,m-r}};
++    }
+     Strength strength=old.crushed ? Strength{old.crushingStress,old.crushingStrain,p.ft}
+-                                 : strengthEnvelope(p,{{sig[0],sig[1],sig[2]}});
++                                 : strengthEnvelope(p,envelopeStress);
+     std::array<double,3> yp {{p.E,p.E,p.E}};
+     if (loading && std::abs(sig[0])+std::abs(sig[1])+std::abs(sig[2])>1.e-5*p.ft)
+         for (int i=0; i<3; ++i)
+@@ -267,16 +313,46 @@ State step(const Parameters& p, const State& old, const Vector6& target) {
+                 yp[i]=averageTangent(p,strength,eps0[i],eps1[i]);
+     bool orthotropic=*std::min_element(sig.begin(),sig.begin()+3)<p.kappa*strength.compression;
+     if (old.crushed) {
++        const double ultimate=p.epsu*strength.peakStrain/p.epsc;
++        Vector6 delta {};
++        for (int i=0; i<6; ++i) delta[i]=target[i]-old.strain[i];
++        if (p.crushedUnloading==Parameters::CrushedUnloading::Elastic && old.crushedStrain>ultimate) {
++            // Optional extension (Parameters::CrushedUnloading): unload and
++            // reload with E above the crushed strain history, no tension.
++            const double emin=minPrincipalStrain(target);
++            if (emin>old.crushedStrain) {
++                Vector6 trialStress=multiply(elasticTangent(p.E,p.nu),delta);
++                for (int i=0; i<6; ++i) trialStress[i]+=old.stress[i];
++                const Principal pr=principalStress(trialStress);
++                Vector6 local {};
++                // No tension; compression bounded by the crushed curve at the
++                // most compressive strain reached (the unloading point).
++                const double cap=compressionStress(p,strength,old.crushedStrain);
++                for (int i=0; i<3; ++i) local[i]=std::clamp(pr.values[i],cap,0.);
++                out.stress=stressToGlobal(local,pr.frame);
++                return out;
++            }
++            out.crushedStrain=emin;
++        }
+         // Original crushed branch uses a reduced isotropic increment. It keeps
+         // PGRAV=100 irreversible; beyond scaled epsu it releases ALL stress.
+         double E=p.E*p.normalRetention;
+-        if (fOld!=0.) E=std::min(0.,averageTangent(p,strength,eps0[2],eps1[2]));
+-        Vector6 delta {};
+-        for (int i=0; i<6; ++i) delta[i]=target[i]-old.strain[i];
++        // CMOD3D (PGRAV=100): YP(3)=E unless SIGP(3) < 0.001*SIGCP, and then
++        // E=min(YP(3),0). Once the smallest principal stress is no longer
++        // compressive the modulus is 0: softening stops, the stress is frozen.
++        if (fOld!=0.) E=sig[2]<.001*strength.compression
++                        ? std::min(0.,averageTangent(p,strength,eps0[2],eps1[2])) : 0.;
+         out.stress=multiply(elasticTangent(E,p.nu),delta);
+         for (int i=0; i<6; ++i) out.stress[i]+=old.stress[i];
+-        const double ultimate=p.epsu*strength.peakStrain/p.epsc;
+-        if (*std::min_element(eps1.begin(),eps1.begin()+3)<=ultimate) out.stress.fill(0.);
++        // CMOD3D label 60 calls PRNCP3 AFTER updating STRESS, then DCRAK3
++        // IK=4 checks the target normal strains in that updated stress frame.
++        // Under a nonproportional increment the axes can rotate appreciably;
++        // the old frame can release all stress one increment too early/late.
++        const auto releaseStrain=strainToLocal(target,principalStress(out.stress).frame);
++        if (*std::min_element(releaseStrain.begin(),releaseStrain.begin()+3)<=ultimate) {
++            out.stress.fill(0.);
++            out.crushedStrain=std::min(out.crushedStrain,ultimate); // released for good
++        }
+         return out;
+     }
+     if (old.hasCrackFrame && !p.regularizedTension()) {
+@@ -303,14 +379,10 @@ State step(const Parameters& p, const State& old, const Vector6& target) {
+         // not a tensile cutoff. CMOD3D label 150 bypasses tensile checks then.
+         if (pr.values[0]>=0.)
+             for (int i=0; i<3; ++i) {
+-                // The optional continuous law needs a reproducible onset at
+-                // equality: a shear perturbation changes the largest root by
+-                // O(h*h), which may consist entirely of eigenvalue roundoff.
+-                // Keep the original strict comparison in the default mode.
+-                const double tol=p.regularizedTension()
+-                    ? 64.*std::numeric_limits<double>::epsilon()
+-                        *std::max(std::abs(pr.values[i]),std::abs(strength.tension)) : 0.;
+-                if (pr.values[i]>strength.tension+tol) ++cracks;
++                // Use the same objective tie rule in the original and the
++                // optional continuous law. Material behavior away from this
++                // roundoff neighborhood is unchanged.
++                if (exceedsTensileCutoff(pr.values[i],strength.tension)) ++cracks;
+             }
+         if (cracks>0) {
+             out.hasCrackFrame=true; out.frame=frame; out.openCracks=cracks;
+@@ -343,9 +415,11 @@ State step(const Parameters& p, const State& old, const Vector6& target) {
+         // DCRAK3, IK=4 retains the predicted stress at peak failure. Stress is
+         // released only at the scaled ultimate strain, not at first crushing.
+         out.stress=stressToGlobal(sig,frame);
++        out.crushedStrain=minPrincipalStrain(target);
+         const double ultimate=p.epsu*strength.peakStrain/p.epsc;
+-        if (*std::min_element(eps1.begin(),eps1.begin()+3)<=ultimate)
+-            out.stress.fill(0.);
++        if (*std::min_element(eps1.begin(),eps1.begin()+3)<=ultimate) {
++            out.stress.fill(0.);out.crushedStrain=std::min(out.crushedStrain,ultimate);
++        }
+     } else {
+         if(p.regularizedTension()) {
+             for(int i=0;i<out.openCracks;++i) {
+@@ -365,6 +439,58 @@ State step(const Parameters& p, const State& old, const Vector6& target) {
+     return out;
+ }
+ 
++/** Material (secant) iteration matrix of a trial state: the matrix CMOD3D
++ * rebuilds after its stress update when IEQREF=0 (labels 74 -> 5 -> 100).
++ * - crushed: isotropic E*STIFAC;
++ * - unloading: initial modulus E;
++ * - loading: rational-curve tangents at the current local strains (ITEM=2,
++ *   one Gauss point), stress-weighted; orthotropic beyond kappa*sigma_c;
++ * - open cracks: DCRAK3 retention; with fracture energy an open plane uses its
++ *   cohesive secant s(kappa)/kappa.
++ * Non-positive curve tangents are replaced by the curve secant, bounded below
++ * by STIFAC*E, so the matrix is symmetric positive semidefinite. It is an
++ * iteration matrix only: it never enters the stress update.
++ */
++Matrix6 secantStiffness(const Parameters& p,const State& s) {
++    if(s.crushed) {
++        // Elastic crushed unloading (optional): E in the compressive
++        // unloading/reloading range, otherwise ADINA's E*STIFAC.
++        const double ultimate=p.epsu*s.crushingStrain/p.epsc;
++        if(p.crushedUnloading==Parameters::CrushedUnloading::Elastic && s.crushedStrain>ultimate &&
++           minPrincipalStrain(s.strain)>s.crushedStrain && principalStress(s.stress).values[2]<0.)
++            return elasticTangent(p.E,p.nu);
++        return elasticTangent(p.E*std::max(p.normalRetention,1.e-12),p.nu);
++    }
++    const Frame frame=s.hasCrackFrame ? s.frame : principalStress(s.stress).frame;
++    const Vector6 sig=stressToLocal(s.stress,frame),eps=strainToLocal(s.strain,frame);
++    const Strength strength=strengthEnvelope(p,{{sig[0],sig[1],sig[2]}});
++    const double f=loadingMeasure(p,s.stress);
++    const bool loading=std::abs(f-s.maximumLoading)<=std::abs(s.maximumLoading)*1.e-8;
++    std::array<double,3> yp {{p.E,p.E,p.E}};
++    if(loading && std::abs(sig[0])+std::abs(sig[1])+std::abs(sig[2])>1.e-5*p.ft)
++        for(int i=0;i<3;++i) if(sig[i]<.001*strength.compression) {
++            double t=compressionTangent(p,strength,eps[i]);
++            if(!(t>0.)) t=eps[i]<0. ? compressionStress(p,strength,eps[i])/eps[i] : p.E;
++            yp[i]=std::max(t,p.normalRetention*p.E);
++        }
++    const bool orthotropic=*std::min_element(sig.begin(),sig.begin()+3)<p.kappa*strength.compression;
++    std::array<double,3> retention {{p.normalRetention,p.normalRetention,p.normalRetention}};
++    if(p.regularizedTension()) for(int i=0;i<s.openCracks;++i) if(s.tension[i].strength>0.) {
++        const auto& h=s.tension[i];
++        const double secant=fracture::envelope(p.E,p.fractureEnergy,p.characteristicLength,h,h.kappa)/h.kappa;
++        retention[i]=std::max(p.normalRetention,std::min(1.,secant/p.E));
++    }
++    const Matrix6 local=localStiffness(p,sig,yp,orthotropic,s.openCracks,retention);
++    Matrix6 out {};
++    for(int j=0;j<6;++j) {
++        Vector6 unit {};unit[j]=1.;
++        const Vector6 column=stressToGlobal(multiply(local,strainToLocal(unit,frame)),frame);
++        for(int i=0;i<6;++i) out[i][j]=column[i];
++    }
++    for(int i=0;i<6;++i) for(int j=i+1;j<6;++j) out[i][j]=out[j][i]=.5*(out[i][j]+out[j][i]);
++    return out;
++}
++
+ State replay(const Parameters& p,const State& committed,const Vector6& target,int steps) {
+     State state=committed;
+     for (int k=1; k<=steps; ++k) {
+@@ -550,7 +676,8 @@ bool integrate(const Parameters& p,const State& committed,const Vector6& strain,
+         State result=replay(p,committed,strain,n);
+         Matrix6 jac {};
+         // Keep the integration grid fixed while differentiating the replay.
+-        if(tangent) jac=numerics::replayJacobian<6>(strain,result,p.epsc,
++        if(tangent && p.tangent==Parameters::Tangent::Secant) jac=secantStiffness(p,result);
++        else if(tangent) jac=numerics::replayJacobian<6>(strain,result,p.epsc,
+             [&](const Vector6& e) {return replay(p,committed,e,n);},
+             [&](const State& state) {
+                 // At FIRST formation the regularized traction is continuous.
+diff --git a/src-before/adinaConcrete3D/Concrete3D.h b/production-final/adinaConcrete3D/Concrete3D.h
+index e4eeaf4..ed7702c 100644
+--- a/src-before/adinaConcrete3D/Concrete3D.h
++++ b/production-final/adinaConcrete3D/Concrete3D.h
+@@ -33,6 +33,45 @@ struct Parameters {
+     // Lch must be supplied for this material point's actual crack bandwidth.
+     double fractureEnergy = 0., characteristicLength = 0.;
+     bool regularizedTension() const {return fractureEnergy>0.;}
++    /** Matrix returned to the global solver; it never changes the stress map.
++     * Secant: CDMOD/CMOD3D-type material stiffness of the trial state (crack
++     * retention, unloading modulus, STIFAC after crushing), symmetric and
++     * positive semidefinite, with the cohesive secant of a softening crack.
++     * Algorithmic: finite-difference Jacobian of the complete trial replay.
++     * It is exact on smooth branches but costs one replay per strain column
++     * and has no meaning across the brittle stress jumps of the original law.
++     */
++    enum class Tangent {Secant, Algorithmic};
++    Tangent tangent = Tangent::Secant;
++    /** Origin of each trial update; used by the OpenSees adapters only.
++     * Iterative: ADINA's own scheme. The element loops update the history
++     * array WA in place on every equilibrium iteration (ECHECK sets IUPDT=0,
++     * CDMOD/CMOD3D overwrite SIG, EPS, EVMAX, ANGLE, CRKSTR, PGRAV), so each
++     * update starts from the previous iteration and a crack or crushing event
++     * met during the iterations of a step is not undone within that step.
++     * Committed: every trial replays from the last converged state. A brittle
++     * crack can then appear and disappear between iterations; when the
++     * equilibrium point falls inside the stress jump at ft no discrete
++     * solution exists and Newton cycles (wall sw1-1, first lateral step).
++     * Both modes restart from the committed state after revertToLastCommit.
++     */
++    enum class Update {Iterative, Committed};
++    Update update = Update::Iterative;
++    /** OPTIONAL extension, not an ADINA equation (default Original).
++     * Original (CDMOD/CMOD3D, PGRAV=100): a crushed point always follows the
++     * softening-curve tangent, also when its strain decreases. Unloading thus
++     * climbs back up the curve and, past the peak strain, the modulus becomes
++     * 0: the point keeps the full peak compressive stress with zero stiffness,
++     * even at tensile strain. Under cyclic loading the locked stresses of a
++     * crushed wall toe dominate the response.
++     * Elastic: below the most compressive principal strain reached since
++     * crushing, the point unloads/reloads with the initial modulus E (ADINA's
++     * unloading rule for uncrushed concrete) and its principal stresses are
++     * capped at zero (no tension). Loading beyond that strain, and the release
++     * of all stress at the scaled ultimate strain, follow the original law.
++     */
++    enum class CrushedUnloading {Original, Elastic};
++    CrushedUnloading crushedUnloading = CrushedUnloading::Original;
+     std::array<double, 6> sp1 {{0., .25, .5, .75, 1., 1.2}};
+     std::array<double, 6> sp31 {{1., 1.4, 1.7, 2.2, 2.5, 2.8}};
+     std::array<double, 6> sp32 {{1.3, 1.5, 2., 2.3, 2.7, 3.2}};
+@@ -56,6 +95,9 @@ struct State {
+     std::array<double, 3> crackStrain {};
+     std::array<fracture::History,3> tension {};
+     double crushingStress = 0., crushingStrain = 0.;
++    // Most compressive principal strain reached since crushing (0 before).
++    // Used only by CrushedUnloading::Elastic.
++    double crushedStrain = 0.;
+ };
+ 
+ struct Principal {
